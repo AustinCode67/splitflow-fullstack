@@ -1,0 +1,329 @@
+POST http://localhost:8080/users
+Content-Type: application/json
+
+{
+  "name": "Alex",
+  "email": "alex@example.com",
+  "password": "abc123"
+}
+
+###
+
+POST http://localhost:8080/users
+Content-Type: application/json
+
+{
+  "name": "",
+  "email": "wrong-email",
+  "password": "abc123"
+}
+
+###
+
+POST http://localhost:8080/users
+Content-Type: application/json
+
+{
+  "name": "John",
+  "email": "john@example.com",
+  "password": "abc123"
+}
+
+###
+
+POST http://localhost:8080/users
+Content-Type: application/json
+
+{
+  "name": "Austin",
+  "email": "austin@example.com",
+  "password": "abc123"
+}
+
+###
+
+
+POST http://localhost:8080/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "abc123"
+}
+
+###
+
+POST http://localhost:8080/login
+Content-Type: application/json
+
+{
+  "email": "austin@example.com",
+  "password": "abc123"
+}
+
+
+###
+
+
+POST http://localhost:8080/groups
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJqb2huQGV4YW1wbGUuY29tIiwiaWF0IjoxNzkxMDE0Mjg5LCJleHAiOjE3OTExMDA2ODl9.1Ybp4QI38cuXujZ7JrlJrrofsVOJIUCjemHn8wQ-vF6kmeoU9FKvoVHoDPgm0nq4
+Content-Type: application/json
+
+{
+  "name": "Penang Trip"
+}
+
+###
+POST http://localhost:8080/groups/1/members
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJqb2huQGV4YW1wbGUuY29tIiwiaWF0IjoxNzkxMDE2NzkwLCJleHAiOjE3OTExMDMxOTB9.x3IaQUOjPV4Xc_Cbii_vgT697w-abKX4WEyLj56v8ollQEOxwVXUPdZTHVigJoLt
+Content-Type: application/json
+
+{
+  "email": "austin@example.com"
+}
+
+###
+
+POST http://localhost:8080/groups/1/members
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJqb2huQGV4YW1wbGUuY29tIiwiaWF0IjoxNzkxMDE2NzkwLCJleHAiOjE3OTExMDMxOTB9.x3IaQUOjPV4Xc_Cbii_vgT697w-abKX4WEyLj56v8ollQEOxwVXUPdZTHVigJoLt
+Content-Type: application/json
+
+{
+  "email": "john@example.com"
+}
+
+###
+
+POST http://localhost:8080/groups
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJqb2huQGV4YW1wbGUuY29tIiwiaWF0IjoxNzkxMDE1NDE4LCJleHAiOjE3OTExMDE4MTh9.AFONAtux84vdKyM9zI10u1vumiVlHGhESUPv0pa9Fco4smJWqQ07nbUcxZdrF6Yp
+Content-Type: application/json
+
+{
+  "name": "KL Trip"
+}
+
+###
+
+POST http://localhost:8080/groups/1/expenses
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJqb2huQGV4YW1wbGUuY29tIiwiaWF0IjoxNzkxMDE4NDQwLCJleHAiOjE3OTExMDQ4NDB9.4Kt9qctABRTOtiIdAUiC4fGZFpdZvhfcmytgeAZFGxiXzXH9hx6LS1IaLu4L9i-u
+Content-Type: application/json
+
+{
+  "description": "Dinner",
+  "amount": "150.00",
+  "paidByEmail": "john@example.com"
+}
+
+###
+
+GET http://localhost:8080/groups/1/members
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJqb2huQGV4YW1wbGUuY29tIiwiaWF0IjoxNzkxMDE2NzkwLCJleHAiOjE3OTExMDMxOTB9.x3IaQUOjPV4Xc_Cbii_vgT697w-abKX4WEyLj56v8ollQEOxwVXUPdZTHVigJoLt
+
+###
+
+@token = eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJqb2huQGV4YW1wbGUuY29tIiwiaWF0IjoxNzkxNjI0NTI5LCJleHAiOjE3OTE3MTA5Mjl9.n5Q_1icRQeVV6yG9z1zblxGDD9fqkrKbGhTXUd96wN0G_aXzBRm0RKIWYMgvjufw
+###
+
+POST http://localhost:8080/groups/1/expenses
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "description": "Lunch",
+  "amount": "120.00",
+  "paidByEmail": "john@example.com"
+}
+
+
+### Login John
+
+POST http://localhost:8080/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "abc123"
+}
+
+###
+
+POST http://localhost:8080/login
+Content-Type: application/json
+
+{
+  "email": "austin@example.com",
+  "password": "abc123"
+}
+
+###
+
+GET http://localhost:8080/secure-test
+Authorization: Bearer {{token}}
+
+###
+GET http://localhost:8080/groups/1/expenses
+Authorization: Bearer {{token}}
+
+###
+
+GET http://localhost:8080/groups/1/expenses/6/splits
+Authorization: Bearer {{token}}
+
+###
+
+GET http://localhost:8080/groups/1/expenses/balances
+Authorization: Bearer {{token}}
+
+###
+
+GET http://localhost:8080/groups/1/expenses/settlements
+Authorization: Bearer {{token}}
+
+###
+
+###
+
+POST http://localhost:8080/groups/1/expenses/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fromUser": "austin@example.com",
+  "toUser": "john@example.com",
+  "amount": "390.00"
+}
+
+###
+
+GET http://localhost:8080/groups/1/expenses/payments
+Authorization: Bearer {{token}}
+
+###
+
+###
+
+POST http://localhost:8080/groups/1/expenses
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "description": "Supper",
+  "amount": 100.00,
+  "paidByEmail": "john@example.com",
+  "participants": [
+    "john@example.com",
+    "austin@example.com"
+  ]
+}
+
+###
+
+PUT http://localhost:8080/groups/1/expenses/6
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "description": "Lunch and Drinks",
+  "amount": 160.00,
+  "paidByEmail": "john@example.com",
+  "participants": [
+    "john@example.com",
+    "austin@example.com"
+  ],
+  "splitType": "EQUAL"
+}
+
+###
+
+DELETE http://localhost:8080/groups/1/expenses/6
+Authorization: Bearer {{token}}
+
+###
+
+POST http://localhost:8080/groups/1/expenses
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "description": "Dinner",
+  "amount": 120.00,
+  "paidByEmail": "john@example.com",
+  "category": "Food",
+  "participants": [
+    "john@example.com",
+    "austin@example.com"
+  ],
+  "splitType": "EQUAL"
+}
+
+###
+
+###
+
+POST http://localhost:8080/groups/1/expenses
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "description": "Dinner",
+  "amount": 120.00,
+  "paidByEmail": "john@example.com",
+  "category": "Food",
+  "participants": [
+    "john@example.com",
+    "austin@example.com"
+  ],
+  "splitType": "EQUAL"
+}
+
+###
+
+POST http://localhost:8080/groups/1/expenses
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "description": "Grab",
+  "amount": 40.00,
+  "paidByEmail": "john@example.com",
+  "category": "Transport",
+  "participants": [
+    "john@example.com",
+    "austin@example.com"
+  ],
+  "splitType": "EQUAL"
+}
+
+###
+
+PUT http://localhost:8080/groups/1/budget
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "budget": "2000.00"
+}
+
+###
+
+GET http://localhost:8080/groups/1/expenses/category-summary
+Authorization: Bearer {{token}}
+
+###
+
+GET http://localhost:8080/groups/1/expenses/dashboard
+Authorization: Bearer {{token}}
+
+###
+
+GET http://localhost:8080/groups/1/expenses/budget-summary
+Authorization: Bearer {{token}}
+
+###
+GET http://localhost:8080/groups
+Authorization: Bearer {{token}}
+
+###
+GET http://localhost:8080/users
+
+

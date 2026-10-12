@@ -1,0 +1,37 @@
+# Node
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+dist-ssr/
+
+# Java / Maven
+target/
+**/target/
+*.class
+
+# Secrets
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+
+# Editors
+.vscode/
+**/.vscode/
+.idea/
+**/.idea/
+*.iml
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.local

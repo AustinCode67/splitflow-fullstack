@@ -1,0 +1,70 @@
+/* =========================================================
+   SPLITFLOW GLOBAL STYLES
+========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  margin: 0;
+  padding: 0;
+
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+
+  width: 100%;
+  min-width: 320px;
+  min-height: 100vh;
+
+  background: #f5f7fb;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  color: #0f172a;
+
+  display: block;
+}
+
+/* VERY IMPORTANT:
+   Removes the default Vite width restriction
+*/
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+
+  margin: 0;
+  padding: 0;
+
+  max-width: none;
+
+  text-align: left;
+}
+
+/* =========================================================
+   BASIC ELEMENT RESET
+========================================================= */
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+button {
+  font-size: inherit;
+}
+
+a {
+  color: inherit;
+}
