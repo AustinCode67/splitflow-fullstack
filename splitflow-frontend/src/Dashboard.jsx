@@ -46,7 +46,7 @@ function Dashboard() {
     useState(null);
 
   // =========================================================
-  // MONTHLY SPENDING
+  // EXPENSE ANALYTICS
   // =========================================================
 
   const [
@@ -55,8 +55,18 @@ function Dashboard() {
   ] = useState(0);
 
   const [
-    loadingMonthlySpending,
-    setLoadingMonthlySpending,
+    monthlyChart,
+    setMonthlyChart,
+  ] = useState([]);
+
+  const [
+    categoryChart,
+    setCategoryChart,
+  ] = useState([]);
+
+  const [
+    loadingAnalytics,
+    setLoadingAnalytics,
   ] = useState(false);
 
   // =========================================================
@@ -138,31 +148,25 @@ function Dashboard() {
   };
 
   // =========================================================
-  // LOAD MONTHLY SPENDING
+  // LOAD EXPENSE ANALYTICS
   // =========================================================
 
-  const loadMonthlySpending =
+  const loadExpenseAnalytics =
     async (groupList) => {
       if (
         !groupList ||
         groupList.length === 0
       ) {
         setMonthlySpending(0);
+        setMonthlyChart([]);
+        setCategoryChart([]);
         return;
       }
 
-      setLoadingMonthlySpending(true);
+      setLoadingAnalytics(true);
 
       try {
-        const now = new Date();
-
-        const currentMonth =
-          now.getMonth();
-
-        const currentYear =
-          now.getFullYear();
-
-        const expenseRequests =
+        const requests =
           groupList.map(
             async (group) => {
               try {
@@ -175,7 +179,16 @@ function Dashboard() {
                   return [];
                 }
 
-                return await response.json();
+                const expenses =
+                  await response.json();
+
+                return expenses.map(
+                  (expense) => ({
+                    ...expense,
+                    groupName:
+                      group.name,
+                  })
+                );
               } catch (error) {
                 console.error(
                   `Failed to load expenses for group ${group.id}:`,
@@ -189,58 +202,203 @@ function Dashboard() {
 
         const expenseLists =
           await Promise.all(
-            expenseRequests
+            requests
           );
 
-        let total = 0;
+        const allExpenses =
+          expenseLists.flat();
 
-        expenseLists.forEach(
-          (expenses) => {
-            expenses.forEach(
-              (expense) => {
-                if (!expense.createdAt) {
-                  return;
-                }
+        const now = new Date();
 
-                const expenseDate =
-                  new Date(
-                    expense.createdAt
-                  );
+        // -----------------------------------------------------
+        // SPENT THIS MONTH
+        // -----------------------------------------------------
 
-                if (
-                  Number.isNaN(
-                    expenseDate.getTime()
-                  )
-                ) {
-                  return;
-                }
+        let currentMonthTotal = 0;
 
-                const isThisMonth =
-                  expenseDate.getMonth() ===
-                    currentMonth &&
-                  expenseDate.getFullYear() ===
-                    currentYear;
+        allExpenses.forEach(
+          (expense) => {
+            if (!expense.createdAt) {
+              return;
+            }
 
-                if (isThisMonth) {
-                  total += Number(
-                    expense.amount || 0
-                  );
-                }
-              }
-            );
+            const date =
+              new Date(
+                expense.createdAt
+              );
+
+            if (
+              Number.isNaN(
+                date.getTime()
+              )
+            ) {
+              return;
+            }
+
+            if (
+              date.getMonth() ===
+                now.getMonth() &&
+              date.getFullYear() ===
+                now.getFullYear()
+            ) {
+              currentMonthTotal +=
+                Number(
+                  expense.amount ||
+                    0
+                );
+            }
           }
         );
 
-        setMonthlySpending(total);
+        setMonthlySpending(
+          currentMonthTotal
+        );
+
+        // -----------------------------------------------------
+        // LAST 6 MONTHS
+        // -----------------------------------------------------
+
+        const months = [];
+
+        for (
+          let offset = 5;
+          offset >= 0;
+          offset--
+        ) {
+          const date =
+            new Date(
+              now.getFullYear(),
+              now.getMonth() -
+                offset,
+              1
+            );
+
+          months.push({
+            year:
+              date.getFullYear(),
+
+            month:
+              date.getMonth(),
+
+            label:
+              date.toLocaleString(
+                "en-MY",
+                {
+                  month:
+                    "short",
+                }
+              ),
+
+            total: 0,
+          });
+        }
+
+        allExpenses.forEach(
+          (expense) => {
+            if (!expense.createdAt) {
+              return;
+            }
+
+            const date =
+              new Date(
+                expense.createdAt
+              );
+
+            if (
+              Number.isNaN(
+                date.getTime()
+              )
+            ) {
+              return;
+            }
+
+            const match =
+              months.find(
+                (month) =>
+                  month.year ===
+                    date.getFullYear() &&
+                  month.month ===
+                    date.getMonth()
+              );
+
+            if (match) {
+              match.total +=
+                Number(
+                  expense.amount ||
+                    0
+                );
+            }
+          }
+        );
+
+        setMonthlyChart(
+          months
+        );
+
+        // -----------------------------------------------------
+        // CATEGORY TOTALS
+        // -----------------------------------------------------
+
+        const categoryTotals = {};
+
+        allExpenses.forEach(
+          (expense) => {
+            const category =
+              expense.category
+                ?.trim() ||
+              "Other";
+
+            categoryTotals[
+              category
+            ] =
+              (
+                categoryTotals[
+                  category
+                ] || 0
+              ) +
+              Number(
+                expense.amount || 0
+              );
+          }
+        );
+
+        const categoryData =
+          Object.entries(
+            categoryTotals
+          )
+            .map(
+              ([
+                category,
+                total,
+              ]) => ({
+                category,
+                total,
+              })
+            )
+            .sort(
+              (a, b) =>
+                b.total -
+                a.total
+            )
+            .slice(
+              0,
+              6
+            );
+
+        setCategoryChart(
+          categoryData
+        );
       } catch (error) {
         console.error(
-          "Failed to calculate monthly spending:",
+          "Failed to load expense analytics:",
           error
         );
 
         setMonthlySpending(0);
+        setMonthlyChart([]);
+        setCategoryChart([]);
       } finally {
-        setLoadingMonthlySpending(
+        setLoadingAnalytics(
           false
         );
       }
@@ -264,7 +422,7 @@ function Dashboard() {
       setLoadingBalances(true);
 
       try {
-        const balanceRequests =
+        const requests =
           groupList.map(
             async (group) => {
               try {
@@ -280,7 +438,7 @@ function Dashboard() {
                 const balances =
                   await response.json();
 
-                const matchingEntry =
+                const entry =
                   Object.entries(
                     balances
                   ).find(
@@ -289,12 +447,12 @@ function Dashboard() {
                       userEmail?.toLowerCase()
                   );
 
-                if (!matchingEntry) {
+                if (!entry) {
                   return 0;
                 }
 
                 return Number(
-                  matchingEntry[1] || 0
+                  entry[1] || 0
                 );
               } catch (error) {
                 console.error(
@@ -307,20 +465,21 @@ function Dashboard() {
             }
           );
 
-        const userBalances =
+        const balances =
           await Promise.all(
-            balanceRequests
+            requests
           );
 
         let owe = 0;
         let owed = 0;
 
-        userBalances.forEach(
+        balances.forEach(
           (balance) => {
             if (balance < 0) {
-              owe += Math.abs(
-                balance
-              );
+              owe +=
+                Math.abs(
+                  balance
+                );
             }
 
             if (balance > 0) {
@@ -330,7 +489,9 @@ function Dashboard() {
         );
 
         setTotalYouOwe(owe);
-        setTotalYouAreOwed(owed);
+        setTotalYouAreOwed(
+          owed
+        );
       } catch (error) {
         console.error(
           "Failed to load balance summary:",
@@ -340,7 +501,9 @@ function Dashboard() {
         setTotalYouOwe(0);
         setTotalYouAreOwed(0);
       } finally {
-        setLoadingBalances(false);
+        setLoadingBalances(
+          false
+        );
       }
     };
 
@@ -361,7 +524,7 @@ function Dashboard() {
       setLoadingActivities(true);
 
       try {
-        const activityRequests =
+        const requests =
           groupList.map(
             async (group) => {
               try {
@@ -395,15 +558,15 @@ function Dashboard() {
             }
           );
 
-        const activityLists =
+        const lists =
           await Promise.all(
-            activityRequests
+            requests
           );
 
-        const allActivities =
-          activityLists.flat();
+        const activities =
+          lists.flat();
 
-        allActivities.sort(
+        activities.sort(
           (a, b) =>
             new Date(
               b.createdAt
@@ -414,7 +577,7 @@ function Dashboard() {
         );
 
         setRecentActivities(
-          allActivities.slice(
+          activities.slice(
             0,
             6
           )
@@ -427,7 +590,9 @@ function Dashboard() {
 
         setRecentActivities([]);
       } finally {
-        setLoadingActivities(false);
+        setLoadingActivities(
+          false
+        );
       }
     };
 
@@ -457,12 +622,14 @@ function Dashboard() {
         setGroups(data);
 
         await Promise.all([
-          loadMonthlySpending(
+          loadExpenseAnalytics(
             data
           ),
+
           loadBalanceSummary(
             data
           ),
+
           loadRecentActivities(
             data
           ),
@@ -477,7 +644,7 @@ function Dashboard() {
     };
 
   // =========================================================
-  // LOAD DEVELOPMENT USERS
+  // DEVELOPMENT USERS
   // =========================================================
 
   const loadDevUsers =
@@ -507,10 +674,7 @@ function Dashboard() {
 
         setDevUsers(data);
       } catch (error) {
-        console.error(
-          "Failed to load development users:",
-          error
-        );
+        console.error(error);
 
         showError(
           error.message
@@ -552,7 +716,9 @@ function Dashboard() {
             event.target
           )
         ) {
-          setShowAccountMenu(false);
+          setShowAccountMenu(
+            false
+          );
         }
       };
 
@@ -570,7 +736,7 @@ function Dashboard() {
   }, []);
 
   // =========================================================
-  // OPEN ACCOUNT MENU
+  // PROFILE
   // =========================================================
 
   const handleProfileClick =
@@ -578,7 +744,9 @@ function Dashboard() {
       const opening =
         !showAccountMenu;
 
-      setShowAccountMenu(opening);
+      setShowAccountMenu(
+        opening
+      );
 
       if (
         opening &&
@@ -596,7 +764,9 @@ function Dashboard() {
     async (e) => {
       e.preventDefault();
 
-      if (!newGroupName.trim()) {
+      if (
+        !newGroupName.trim()
+      ) {
         showError(
           "Please enter a group name."
         );
@@ -657,9 +827,13 @@ function Dashboard() {
       if (
         account.email
           ?.toLowerCase() ===
-        userEmail?.toLowerCase()
+        userEmail
+          ?.toLowerCase()
       ) {
-        setShowAccountMenu(false);
+        setShowAccountMenu(
+          false
+        );
+
         return;
       }
 
@@ -718,7 +892,9 @@ function Dashboard() {
           error.message
         );
 
-        setSwitchingAccount("");
+        setSwitchingAccount(
+          ""
+        );
       }
     };
 
@@ -726,10 +902,9 @@ function Dashboard() {
   // LOGOUT
   // =========================================================
 
-  const handleLogout =
-    () => {
-      logoutUser();
-    };
+  const handleLogout = () => {
+    logoutUser();
+  };
 
   // =========================================================
   // STATS
@@ -761,7 +936,8 @@ function Dashboard() {
           ) =>
             total +
             Number(
-              group.budget || 0
+              group.budget ||
+                0
             ),
           0
         ),
@@ -769,7 +945,7 @@ function Dashboard() {
     );
 
   // =========================================================
-  // ACTIVITY HELPERS
+  // HELPERS
   // =========================================================
 
   const formatActivityTime =
@@ -850,6 +1026,24 @@ function Dashboard() {
       return "•";
     };
 
+  const maxMonthlyValue =
+    Math.max(
+      ...monthlyChart.map(
+        (month) =>
+          month.total
+      ),
+      1
+    );
+
+  const maxCategoryValue =
+    Math.max(
+      ...categoryChart.map(
+        (item) =>
+          item.total
+      ),
+      1
+    );
+
   // =========================================================
   // GROUP PAGE
   // =========================================================
@@ -861,7 +1055,10 @@ function Dashboard() {
           selectedGroup
         }
         onBack={() => {
-          setSelectedGroup(null);
+          setSelectedGroup(
+            null
+          );
+
           loadGroups();
         }}
       />
@@ -932,7 +1129,8 @@ function Dashboard() {
             <div className="sidebar-user-info">
 
               <strong>
-                {userName || "User"}
+                {userName ||
+                  "User"}
               </strong>
 
               <span>
@@ -1004,12 +1202,10 @@ function Dashboard() {
             >
 
               <div className="header-avatar">
-
                 {userName
                   ?.charAt(0)
                   ?.toUpperCase() ||
                   "U"}
-
               </div>
 
               <div className="profile-details">
@@ -1036,8 +1232,6 @@ function Dashboard() {
               </span>
 
             </button>
-
-            {/* ACCOUNT MENU */}
 
             {showAccountMenu && (
 
@@ -1075,7 +1269,8 @@ function Dashboard() {
                         Loading users...
                       </div>
 
-                    ) : devUsers.length === 0 ? (
+                    ) : devUsers.length ===
+                      0 ? (
 
                       <div className="account-switch-loading">
                         No users found.
@@ -1125,14 +1320,12 @@ function Dashboard() {
                               >
 
                                 <div className="account-option-avatar">
-
                                   {account.name
                                     ?.charAt(
                                       0
                                     )
                                     ?.toUpperCase() ||
                                     "U"}
-
                                 </div>
 
                                 <div className="account-option-info">
@@ -1206,12 +1399,10 @@ function Dashboard() {
             <div className="dashboard-status-content">
 
               <span className="dashboard-status-icon">
-
                 {status.type ===
                 "success"
                   ? "✓"
                   : "!"}
-
               </span>
 
               <span>
@@ -1298,13 +1489,11 @@ function Dashboard() {
               </span>
 
               <strong className="budget-stat">
-
-                {loadingMonthlySpending
+                {loadingAnalytics
                   ? "..."
                   : `RM ${monthlySpending.toFixed(
                       2
                     )}`}
-
               </strong>
 
               <small>
@@ -1328,13 +1517,11 @@ function Dashboard() {
               </span>
 
               <strong className="budget-stat">
-
                 {loadingBalances
                   ? "..."
                   : `RM ${totalYouOwe.toFixed(
                       2
                     )}`}
-
               </strong>
 
               <small>
@@ -1358,13 +1545,11 @@ function Dashboard() {
               </span>
 
               <strong className="budget-stat">
-
                 {loadingBalances
                   ? "..."
                   : `RM ${totalYouAreOwed.toFixed(
                       2
                     )}`}
-
               </strong>
 
               <small>
@@ -1388,17 +1573,263 @@ function Dashboard() {
               </span>
 
               <strong className="budget-stat">
-
                 RM{" "}
                 {totalBudget.toFixed(
                   2
                 )}
-
               </strong>
 
               <small>
                 Across all your groups
               </small>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* SPENDING OVERVIEW */}
+
+        <section className="spending-overview">
+
+          <div className="analytics-heading">
+
+            <div>
+
+              <p className="section-eyebrow">
+                ANALYTICS
+              </p>
+
+              <h2>
+                Spending Overview
+              </h2>
+
+              <p>
+                Understand how your
+                shared expenses are
+                changing over time.
+              </p>
+
+            </div>
+
+          </div>
+
+          <div className="analytics-grid">
+
+            {/* MONTHLY */}
+
+            <div className="analytics-card">
+
+              <div className="analytics-card-header">
+
+                <div>
+
+                  <span className="analytics-card-label">
+                    LAST 6 MONTHS
+                  </span>
+
+                  <h3>
+                    Monthly Spending
+                  </h3>
+
+                </div>
+
+                <span className="analytics-total">
+                  RM{" "}
+                  {monthlyChart
+                    .reduce(
+                      (
+                        total,
+                        month
+                      ) =>
+                        total +
+                        month.total,
+                      0
+                    )
+                    .toFixed(
+                      2
+                    )}
+                </span>
+
+              </div>
+
+              {loadingAnalytics ? (
+
+                <div className="analytics-empty">
+                  Loading analytics...
+                </div>
+
+              ) : monthlyChart.every(
+                  (month) =>
+                    month.total ===
+                    0
+                ) ? (
+
+                <div className="analytics-empty">
+                  No spending data yet.
+                </div>
+
+              ) : (
+
+                <div className="monthly-chart">
+
+                  {monthlyChart.map(
+                    (month) => {
+
+                      const height =
+                        Math.max(
+                          (
+                            month.total /
+                            maxMonthlyValue
+                          ) *
+                            100,
+                          month.total >
+                            0
+                            ? 8
+                            : 0
+                        );
+
+                      return (
+
+                        <div
+                          className="month-column"
+                          key={`${month.year}-${month.month}`}
+                        >
+
+                          <div className="month-amount">
+                            {month.total >
+                            0
+                              ? `RM ${month.total.toFixed(
+                                  0
+                                )}`
+                              : ""}
+                          </div>
+
+                          <div className="month-bar-area">
+
+                            <div
+                              className="month-bar"
+                              style={{
+                                height:
+                                  `${height}%`,
+                              }}
+                            />
+
+                          </div>
+
+                          <span>
+                            {
+                              month.label
+                            }
+                          </span>
+
+                        </div>
+
+                      );
+                    }
+                  )}
+
+                </div>
+
+              )}
+
+            </div>
+
+            {/* CATEGORY */}
+
+            <div className="analytics-card">
+
+              <div className="analytics-card-header">
+
+                <div>
+
+                  <span className="analytics-card-label">
+                    BREAKDOWN
+                  </span>
+
+                  <h3>
+                    Spending by Category
+                  </h3>
+
+                </div>
+
+              </div>
+
+              {loadingAnalytics ? (
+
+                <div className="analytics-empty">
+                  Loading analytics...
+                </div>
+
+              ) : categoryChart.length ===
+                0 ? (
+
+                <div className="analytics-empty">
+                  No category data yet.
+                </div>
+
+              ) : (
+
+                <div className="category-chart">
+
+                  {categoryChart.map(
+                    (item) => {
+
+                      const width =
+                        (
+                          item.total /
+                          maxCategoryValue
+                        ) *
+                        100;
+
+                      return (
+
+                        <div
+                          className="category-row"
+                          key={
+                            item.category
+                          }
+                        >
+
+                          <div className="category-row-top">
+
+                            <span>
+                              {
+                                item.category
+                              }
+                            </span>
+
+                            <strong>
+                              RM{" "}
+                              {item.total.toFixed(
+                                2
+                              )}
+                            </strong>
+
+                          </div>
+
+                          <div className="category-track">
+
+                            <div
+                              className="category-fill"
+                              style={{
+                                width:
+                                  `${width}%`,
+                              }}
+                            />
+
+                          </div>
+
+                        </div>
+
+                      );
+                    }
+                  )}
+
+                </div>
+
+              )}
 
             </div>
 
@@ -1443,7 +1874,8 @@ function Dashboard() {
 
             </div>
 
-          ) : recentActivities.length === 0 ? (
+          ) : recentActivities.length ===
+            0 ? (
 
             <div className="activity-empty">
 
@@ -1470,17 +1902,13 @@ function Dashboard() {
 
                   <div
                     className="activity-item"
-                    key={
-                      `${activity.groupId}-${activity.id}`
-                    }
+                    key={`${activity.groupId}-${activity.id}`}
                   >
 
                     <div className="activity-icon">
-
                       {getActivityIcon(
                         activity.actionType
                       )}
-
                     </div>
 
                     <div className="activity-content">
@@ -1496,11 +1924,9 @@ function Dashboard() {
                     </div>
 
                     <div className="activity-time">
-
                       {formatActivityTime(
                         activity.createdAt
                       )}
-
                     </div>
 
                   </div>
@@ -1568,11 +1994,9 @@ function Dashboard() {
                 creating
               }
             >
-
               {creating
                 ? "Creating..."
                 : "+ Create Group"}
-
             </button>
 
           </form>
@@ -1604,13 +2028,15 @@ function Dashboard() {
             </div>
 
             {!loading &&
-              groups.length > 0 && (
+              groups.length >
+                0 && (
 
                 <span className="group-count-badge">
 
                   {groups.length}{" "}
 
-                  {groups.length === 1
+                  {groups.length ===
+                  1
                     ? "group"
                     : "groups"}
 
@@ -1635,7 +2061,8 @@ function Dashboard() {
           )}
 
           {!loading &&
-            groups.length === 0 && (
+            groups.length ===
+              0 && (
 
               <div className="empty-groups">
 
@@ -1659,7 +2086,8 @@ function Dashboard() {
             )}
 
           {!loading &&
-            groups.length > 0 && (
+            groups.length >
+              0 && (
 
               <div className="group-card-grid">
 
@@ -1667,15 +2095,15 @@ function Dashboard() {
                   (group) => {
 
                     const isOwner =
-                      group
-                        .createdByEmail
+                      group.createdByEmail
                         ?.toLowerCase() ===
                       userEmail
                         ?.toLowerCase();
 
                     const budget =
                       Number(
-                        group.budget || 0
+                        group.budget ||
+                          0
                       );
 
                     return (
@@ -1698,7 +2126,9 @@ function Dashboard() {
                           <div className="group-icon">
 
                             {group.name
-                              ?.charAt(0)
+                              ?.charAt(
+                                0
+                              )
                               ?.toUpperCase() ||
                               "G"}
 
@@ -1711,11 +2141,9 @@ function Dashboard() {
                                 : "group-role member"
                             }
                           >
-
                             {isOwner
                               ? "Owner"
                               : "Member"}
-
                           </span>
 
                         </div>
@@ -1727,10 +2155,8 @@ function Dashboard() {
                           </h3>
 
                           <p className="group-id">
-
                             Group #
                             {group.id}
-
                           </p>
 
                         </div>
@@ -1742,12 +2168,10 @@ function Dashboard() {
                           </span>
 
                           <strong>
-
                             RM{" "}
                             {budget.toFixed(
                               2
                             )}
-
                           </strong>
 
                         </div>
