@@ -907,6 +907,42 @@ function Dashboard() {
   };
 
   // =========================================================
+  // QUICK ACTIONS
+  // =========================================================
+
+  const scrollToSection =
+    (selector) => {
+      document
+        .querySelector(
+          selector
+        )
+        ?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+    };
+
+  const handleRefreshDashboard =
+    async () => {
+      setLoading(true);
+      setStatus(null);
+
+      try {
+        await loadGroups();
+
+        showSuccess(
+          "Dashboard refreshed."
+        );
+      } catch (error) {
+        showError(
+          "Unable to refresh dashboard."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  // =========================================================
   // STATS
   // =========================================================
 
@@ -1120,10 +1156,12 @@ function Dashboard() {
           <div className="sidebar-user">
 
             <div className="user-avatar">
+
               {userName
                 ?.charAt(0)
                 ?.toUpperCase() ||
                 "U"}
+
             </div>
 
             <div className="sidebar-user-info">
@@ -1202,10 +1240,12 @@ function Dashboard() {
             >
 
               <div className="header-avatar">
+
                 {userName
                   ?.charAt(0)
                   ?.toUpperCase() ||
                   "U"}
+
               </div>
 
               <div className="profile-details">
@@ -1269,8 +1309,7 @@ function Dashboard() {
                         Loading users...
                       </div>
 
-                    ) : devUsers.length ===
-                      0 ? (
+                    ) : devUsers.length === 0 ? (
 
                       <div className="account-switch-loading">
                         No users found.
@@ -1320,12 +1359,14 @@ function Dashboard() {
                               >
 
                                 <div className="account-option-avatar">
+
                                   {account.name
                                     ?.charAt(
                                       0
                                     )
                                     ?.toUpperCase() ||
                                     "U"}
+
                                 </div>
 
                                 <div className="account-option-info">
@@ -1388,6 +1429,158 @@ function Dashboard() {
 
         </div>
 
+        {/* QUICK ACTIONS */}
+
+        <section className="quick-actions-section">
+
+          <div className="quick-actions-heading">
+
+            <div>
+
+              <p className="section-eyebrow">
+                QUICK ACTIONS
+              </p>
+
+              <h2>
+                What would you like to do?
+              </h2>
+
+            </div>
+
+          </div>
+
+          <div className="quick-actions-grid">
+
+            <button
+              type="button"
+              className="quick-action-card primary"
+              onClick={() =>
+                scrollToSection(
+                  ".create-group-card"
+                )
+              }
+            >
+
+              <div className="quick-action-icon">
+                +
+              </div>
+
+              <div className="quick-action-content">
+
+                <strong>
+                  Create Group
+                </strong>
+
+                <span>
+                  Start a new shared expense group
+                </span>
+
+              </div>
+
+              <div className="quick-action-arrow">
+                →
+              </div>
+
+            </button>
+
+            <button
+              type="button"
+              className="quick-action-card"
+              onClick={() =>
+                scrollToSection(
+                  ".groups-section"
+                )
+              }
+            >
+
+              <div className="quick-action-icon">
+                👥
+              </div>
+
+              <div className="quick-action-content">
+
+                <strong>
+                  View Groups
+                </strong>
+
+                <span>
+                  Open and manage your groups
+                </span>
+
+              </div>
+
+              <div className="quick-action-arrow">
+                →
+              </div>
+
+            </button>
+
+            <button
+              type="button"
+              className="quick-action-card"
+              onClick={() =>
+                scrollToSection(
+                  ".spending-overview"
+                )
+              }
+            >
+
+              <div className="quick-action-icon">
+                📊
+              </div>
+
+              <div className="quick-action-content">
+
+                <strong>
+                  View Analytics
+                </strong>
+
+                <span>
+                  Explore your spending trends
+                </span>
+
+              </div>
+
+              <div className="quick-action-arrow">
+                →
+              </div>
+
+            </button>
+
+            <button
+              type="button"
+              className="quick-action-card"
+              onClick={
+                handleRefreshDashboard
+              }
+            >
+
+              <div className="quick-action-icon">
+                ↻
+              </div>
+
+              <div className="quick-action-content">
+
+                <strong>
+                  Refresh Dashboard
+                </strong>
+
+                <span>
+                  Reload balances and activity
+                </span>
+
+              </div>
+
+              <div className="quick-action-arrow">
+                →
+              </div>
+
+            </button>
+
+          </div>
+
+        </section>
+
         {/* STATUS */}
 
         {status && (
@@ -1399,10 +1592,12 @@ function Dashboard() {
             <div className="dashboard-status-content">
 
               <span className="dashboard-status-icon">
+
                 {status.type ===
                 "success"
                   ? "✓"
                   : "!"}
+
               </span>
 
               <span>
@@ -1489,11 +1684,13 @@ function Dashboard() {
               </span>
 
               <strong className="budget-stat">
+
                 {loadingAnalytics
                   ? "..."
                   : `RM ${monthlySpending.toFixed(
                       2
                     )}`}
+
               </strong>
 
               <small>
@@ -1517,11 +1714,13 @@ function Dashboard() {
               </span>
 
               <strong className="budget-stat">
+
                 {loadingBalances
                   ? "..."
                   : `RM ${totalYouOwe.toFixed(
                       2
                     )}`}
+
               </strong>
 
               <small>
@@ -1545,11 +1744,13 @@ function Dashboard() {
               </span>
 
               <strong className="budget-stat">
+
                 {loadingBalances
                   ? "..."
                   : `RM ${totalYouAreOwed.toFixed(
                       2
                     )}`}
+
               </strong>
 
               <small>
@@ -1573,10 +1774,13 @@ function Dashboard() {
               </span>
 
               <strong className="budget-stat">
+
                 RM{" "}
+
                 {totalBudget.toFixed(
                   2
                 )}
+
               </strong>
 
               <small>
@@ -1636,7 +1840,9 @@ function Dashboard() {
                 </div>
 
                 <span className="analytics-total">
+
                   RM{" "}
+
                   {monthlyChart
                     .reduce(
                       (
@@ -1650,6 +1856,7 @@ function Dashboard() {
                     .toFixed(
                       2
                     )}
+
                 </span>
 
               </div>
@@ -1698,12 +1905,14 @@ function Dashboard() {
                         >
 
                           <div className="month-amount">
+
                             {month.total >
                             0
                               ? `RM ${month.total.toFixed(
                                   0
                                 )}`
                               : ""}
+
                           </div>
 
                           <div className="month-bar-area">
@@ -1801,10 +2010,13 @@ function Dashboard() {
                             </span>
 
                             <strong>
+
                               RM{" "}
+
                               {item.total.toFixed(
                                 2
                               )}
+
                             </strong>
 
                           </div>
@@ -1906,9 +2118,11 @@ function Dashboard() {
                   >
 
                     <div className="activity-icon">
+
                       {getActivityIcon(
                         activity.actionType
                       )}
+
                     </div>
 
                     <div className="activity-content">
@@ -1924,9 +2138,11 @@ function Dashboard() {
                     </div>
 
                     <div className="activity-time">
+
                       {formatActivityTime(
                         activity.createdAt
                       )}
+
                     </div>
 
                   </div>
@@ -1994,9 +2210,11 @@ function Dashboard() {
                 creating
               }
             >
+
               {creating
                 ? "Creating..."
                 : "+ Create Group"}
+
             </button>
 
           </form>
@@ -2141,9 +2359,11 @@ function Dashboard() {
                                 : "group-role member"
                             }
                           >
+
                             {isOwner
                               ? "Owner"
                               : "Member"}
+
                           </span>
 
                         </div>
@@ -2155,8 +2375,10 @@ function Dashboard() {
                           </h3>
 
                           <p className="group-id">
+
                             Group #
                             {group.id}
+
                           </p>
 
                         </div>
@@ -2168,10 +2390,13 @@ function Dashboard() {
                           </span>
 
                           <strong>
+
                             RM{" "}
+
                             {budget.toFixed(
                               2
                             )}
+
                           </strong>
 
                         </div>
