@@ -1368,6 +1368,19 @@ function GroupPage({
     };
 
   // =========================================================
+  // SECTION NAVIGATION
+  // =========================================================
+
+  const scrollToGroupSection = (sectionId) => {
+    document
+      .getElementById(sectionId)
+      ?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+  };
+
+  // =========================================================
   // FILTER EXPENSES
   // =========================================================
 
@@ -1635,33 +1648,139 @@ function GroupPage({
 
       {/* HEADER */}
 
-      <div className="group-topbar">
+      <div className="group-topbar group-hero">
 
-        <div>
+        <div className="group-hero-left">
           <button
             className="back-btn"
-            onClick={
-              onBack
-            }
+            onClick={onBack}
           >
             ← Back
           </button>
 
-          <h1>
-            {group.name}
-          </h1>
+          <div className="group-hero-title-row">
+            <div>
+              <p className="group-hero-eyebrow">
+                GROUP #{group.id}
+              </p>
+
+              <h1>
+                {group.name}
+              </h1>
+            </div>
+
+            <span
+              className={`group-role-badge ${
+                isGroupOwner ? "owner" : "member"
+              }`}
+            >
+              {isGroupOwner ? "Owner" : "Member"}
+            </span>
+          </div>
 
           <p className="group-subtitle">
             {isGroupOwner
-              ? "You are the group owner"
-              : "Group member"}
+              ? "You are the group owner and can manage members, budget and group settings."
+              : "You are a member of this shared expense group."}
           </p>
         </div>
+
+        <div className="group-hero-stats">
+          <div className="group-hero-stat">
+            <span>Budget</span>
+            <strong>
+              RM{" "}
+              {Number(
+                budgetSummary.budget || 0
+              ).toFixed(2)}
+            </strong>
+          </div>
+
+          <div className="group-hero-stat">
+            <span>Your Balance</span>
+            <strong
+              className={
+                myBalance > 0
+                  ? "positive-balance"
+                  : myBalance < 0
+                    ? "negative-balance"
+                    : ""
+              }
+            >
+              {myBalance > 0 ? "+" : ""}
+              RM {myBalance.toFixed(2)}
+            </strong>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION NAVIGATION */}
+
+      <div className="group-section-nav">
+
+        <button
+          type="button"
+          onClick={() =>
+            scrollToGroupSection(
+              "overview-section"
+            )
+          }
+        >
+          Overview
+        </button>
+
+        <button
+          type="button"
+          onClick={() =>
+            scrollToGroupSection(
+              "members-section"
+            )
+          }
+        >
+          Members
+        </button>
+
+        <button
+          type="button"
+          onClick={() =>
+            scrollToGroupSection(
+              "expenses-section"
+            )
+          }
+        >
+          Expenses
+        </button>
+
+        <button
+          type="button"
+          onClick={() =>
+            scrollToGroupSection(
+              "settlements-section"
+            )
+          }
+        >
+          Settlements
+        </button>
+
+        <button
+          type="button"
+          onClick={() =>
+            scrollToGroupSection(
+              "activity-section"
+            )
+          }
+        >
+          Activity
+        </button>
+
       </div>
 
       {/* SUMMARY */}
 
-      <div className="summary-grid">
+      <div
+        id="overview-section"
+        className="summary-grid group-scroll-target"
+      >
 
         <div className="summary-card">
 
@@ -1907,7 +2026,10 @@ function GroupPage({
 
       {/* MEMBERS */}
 
-      <div className="section-card">
+      <div
+        id="members-section"
+        className="section-card group-scroll-target"
+      >
 
         <h2>
           Members
@@ -2040,7 +2162,10 @@ function GroupPage({
 
       {/* ADD EXPENSE */}
 
-      <div className="section-card">
+      <div
+        id="expenses-section"
+        className="section-card group-scroll-target"
+      >
 
         <h2>
           Add Expense
@@ -2258,7 +2383,10 @@ function GroupPage({
 
       {/* RECOMMENDED SETTLEMENTS */}
 
-      <div className="section-card">
+      <div
+        id="settlements-section"
+        className="section-card group-scroll-target"
+      >
 
         <h2>
           Recommended Settlements
@@ -2536,7 +2664,10 @@ function GroupPage({
 
       {/* ACTIVITY HISTORY */}
 
-      <div className="section-card">
+      <div
+        id="activity-section"
+        className="section-card group-scroll-target"
+      >
 
         <div className="activity-title-row">
 
