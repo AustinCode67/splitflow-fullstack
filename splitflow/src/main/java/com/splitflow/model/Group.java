@@ -2,7 +2,11 @@ package com.splitflow.model;
 
 import java.math.BigDecimal;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "expense_groups")
@@ -13,13 +17,19 @@ public class Group {
     private Long id;
 
     private String name;
+
     private BigDecimal budget;
+
     private String createdByEmail;
 
     public Group() {
     }
 
-    public Group(Long id, String name, String createdByEmail) {
+    public Group(
+            Long id,
+            String name,
+            String createdByEmail) {
+
         this.id = id;
         this.name = name;
         this.createdByEmail = createdByEmail;
@@ -45,7 +55,9 @@ public class Group {
         this.name = name;
     }
 
-    public void setCreatedByEmail(String createdByEmail) {
+    public void setCreatedByEmail(
+            String createdByEmail) {
+
         this.createdByEmail = createdByEmail;
     }
 

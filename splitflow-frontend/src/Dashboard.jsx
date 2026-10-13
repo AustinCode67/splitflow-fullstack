@@ -132,6 +132,30 @@ function Dashboard() {
     useRef(null);
 
   // =========================================================
+  // DELETE ACCOUNT
+  // =========================================================
+
+  const [
+    showDeleteModal,
+    setShowDeleteModal,
+  ] = useState(false);
+
+  const [
+    deleteConfirmation,
+    setDeleteConfirmation,
+  ] = useState("");
+
+  const [
+    deletingAccount,
+    setDeletingAccount,
+  ] = useState(false);
+
+  const [
+    deleteError,
+    setDeleteError,
+  ] = useState("");
+
+  // =========================================================
   // STATUS
   // =========================================================
 
@@ -646,44 +670,38 @@ function Dashboard() {
   // DEVELOPMENT USERS
   // =========================================================
 
-  const loadDevUsers =
-    async () => {
-      if (!import.meta.env.DEV) {
-        return;
-      }
+  const loadDevUsers = async () => {
+  if (!import.meta.env.DEV) {
+    return;
+  }
 
-      setLoadingDevUsers(true);
+  setLoadingDevUsers(true);
 
-      try {
-        const response =
-          await authFetch(
-            "/dev/users"
-          );
+  try {
+    const response = await authFetch(
+      "/dev/users"
+    );
 
-        if (!response.ok) {
-          throw new Error(
-            await getErrorMessage(
-              response
-            )
-          );
-        }
+    if (!response.ok) {
+      setDevUsers([]);
+      return;
+    }
 
-        const data =
-          await response.json();
+    const data =
+      await response.json();
 
-        setDevUsers(data);
-      } catch (error) {
-        console.error(error);
+    setDevUsers(data);
+  } catch (error) {
+    console.warn(
+      "Dev account switcher unavailable:",
+      error
+    );
 
-        showError(
-          error.message
-        );
-      } finally {
-        setLoadingDevUsers(
-          false
-        );
-      }
-    };
+    setDevUsers([]);
+  } finally {
+    setLoadingDevUsers(false);
+  }
+};
 
   // =========================================================
   // INITIAL LOAD
@@ -904,6 +922,95 @@ function Dashboard() {
   const handleLogout = () => {
     logoutUser();
   };
+
+  // =========================================================
+  // DELETE ACCOUNT
+  // =========================================================
+
+  const openDeleteModal = () => {
+    setShowAccountMenu(false);
+
+    setDeleteConfirmation(
+      ""
+    );
+
+    setDeleteError("");
+
+    setShowDeleteModal(
+      true
+    );
+  };
+
+  const closeDeleteModal = () => {
+    if (deletingAccount) {
+      return;
+    }
+
+    setShowDeleteModal(
+      false
+    );
+
+    setDeleteConfirmation(
+      ""
+    );
+
+    setDeleteError("");
+  };
+
+  const handleDeleteAccount =
+    async () => {
+      if (
+        deleteConfirmation !==
+        "DELETE"
+      ) {
+        setDeleteError(
+          'Please type "DELETE" exactly to confirm.'
+        );
+
+        return;
+      }
+
+      setDeletingAccount(
+        true
+      );
+
+      setDeleteError("");
+
+      try {
+        const response =
+          await authFetch(
+            "/users/me",
+            {
+              method:
+                "DELETE",
+            }
+          );
+
+        if (!response.ok) {
+          throw new Error(
+            await getErrorMessage(
+              response
+            )
+          );
+        }
+
+        logoutUser();
+      } catch (error) {
+        console.error(
+          "Failed to delete account:",
+          error
+        );
+
+        setDeleteError(
+          error.message ||
+            "Unable to delete your account."
+        );
+      } finally {
+        setDeletingAccount(
+          false
+        );
+      }
+    };
 
   // =========================================================
   // QUICK ACTIONS
@@ -1147,9 +1254,7 @@ function Dashboard() {
   return (
     <div className="dashboard-layout">
 
-      {/* =====================================================
-          SIDEBAR
-          ===================================================== */}
+      {/* SIDEBAR */}
 
       <aside className="dashboard-sidebar">
 
@@ -1234,9 +1339,7 @@ function Dashboard() {
 
       </aside>
 
-      {/* =====================================================
-          MAIN
-          ===================================================== */}
+      {/* MAIN */}
 
       <main className="dashboard-main">
 
@@ -1465,6 +1568,16 @@ function Dashboard() {
                   ↪ Logout
                 </button>
 
+                <button
+                  type="button"
+                  className="account-menu-delete"
+                  onClick={
+                    openDeleteModal
+                  }
+                >
+                  🗑 Delete Account
+                </button>
+
               </div>
 
             )}
@@ -1473,9 +1586,7 @@ function Dashboard() {
 
         </div>
 
-        {/* =====================================================
-            QUICK ACTIONS
-            ===================================================== */}
+        {/* QUICK ACTIONS */}
 
         <section className="quick-actions-section">
 
@@ -1627,9 +1738,7 @@ function Dashboard() {
 
         </section>
 
-        {/* =====================================================
-            STATUS
-            ===================================================== */}
+        {/* STATUS */}
 
         {status && (
 
@@ -1667,9 +1776,7 @@ function Dashboard() {
 
         )}
 
-        {/* =====================================================
-            STATS
-            ===================================================== */}
+        {/* STATS */}
 
         <section className="dashboard-stats">
 
@@ -1843,9 +1950,7 @@ function Dashboard() {
 
         </section>
 
-        {/* =====================================================
-            SPENDING OVERVIEW
-            ===================================================== */}
+        {/* SPENDING OVERVIEW */}
 
         <section className="spending-overview">
 
@@ -1942,8 +2047,6 @@ function Dashboard() {
           {/* ANALYTICS CHARTS */}
 
           <div className="analytics-grid">
-
-            {/* MONTHLY */}
 
             <div className="analytics-card">
 
@@ -2065,8 +2168,6 @@ function Dashboard() {
 
             </div>
 
-            {/* CATEGORY */}
-
             <div className="analytics-card">
 
               <div className="analytics-card-header">
@@ -2169,9 +2270,7 @@ function Dashboard() {
 
         </section>
 
-        {/* =====================================================
-            RECENT ACTIVITY
-            ===================================================== */}
+        {/* RECENT ACTIVITY */}
 
         <section className="recent-activity-card">
 
@@ -2279,9 +2378,7 @@ function Dashboard() {
 
         </section>
 
-        {/* =====================================================
-            CREATE GROUP
-            ===================================================== */}
+        {/* CREATE GROUP */}
 
         <section className="create-group-card">
 
@@ -2346,9 +2443,7 @@ function Dashboard() {
 
         </section>
 
-        {/* =====================================================
-            GROUPS
-            ===================================================== */}
+        {/* GROUPS */}
 
         <section className="groups-section">
 
@@ -2553,6 +2648,139 @@ function Dashboard() {
         </section>
 
       </main>
+
+      {/* =====================================================
+          DELETE ACCOUNT MODAL
+          ===================================================== */}
+
+      {showDeleteModal && (
+
+        <div
+          className="delete-account-overlay"
+          onMouseDown={(e) => {
+            if (
+              e.target ===
+              e.currentTarget
+            ) {
+              closeDeleteModal();
+            }
+          }}
+        >
+
+          <div className="delete-account-modal">
+
+            <div className="delete-account-warning-icon">
+              !
+            </div>
+
+            <h2>
+              Delete your account?
+            </h2>
+
+            <p className="delete-account-description">
+              This action permanently
+              deletes your SplitFlow
+              account and cannot be
+              undone.
+            </p>
+
+            <div className="delete-account-notice">
+
+              <strong>
+                Before you continue
+              </strong>
+
+              <span>
+                You cannot delete your
+                account while you still
+                own a group. Delete or
+                transfer ownership of
+                your groups first.
+              </span>
+
+            </div>
+
+            <label
+              className="delete-confirm-label"
+              htmlFor="delete-confirmation"
+            >
+              Type{" "}
+              <strong>
+                DELETE
+              </strong>{" "}
+              to confirm
+            </label>
+
+            <input
+              id="delete-confirmation"
+              type="text"
+              className="delete-confirm-input"
+              placeholder="DELETE"
+              value={
+                deleteConfirmation
+              }
+              disabled={
+                deletingAccount
+              }
+              autoComplete="off"
+              onChange={(e) => {
+                setDeleteConfirmation(
+                  e.target.value
+                );
+
+                setDeleteError(
+                  ""
+                );
+              }}
+            />
+
+            {deleteError && (
+
+              <div className="delete-account-error">
+                {deleteError}
+              </div>
+
+            )}
+
+            <div className="delete-account-actions">
+
+              <button
+                type="button"
+                className="delete-cancel-btn"
+                onClick={
+                  closeDeleteModal
+                }
+                disabled={
+                  deletingAccount
+                }
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="delete-confirm-btn"
+                onClick={
+                  handleDeleteAccount
+                }
+                disabled={
+                  deletingAccount ||
+                  deleteConfirmation !==
+                    "DELETE"
+                }
+              >
+                {deletingAccount
+                  ? "Deleting..."
+                  : "Delete Account"}
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
 
     </div>
   );

@@ -29,10 +29,8 @@ export const authFetch = async (
       `Bearer ${token}`;
   }
 
-  let response;
-
   try {
-    response =
+    const response =
       await fetch(
         `${API_BASE_URL}${endpoint}`,
         {
@@ -40,36 +38,13 @@ export const authFetch = async (
           headers,
         }
       );
+
+    return response;
   } catch {
     throw new Error(
       "Cannot connect to backend."
     );
   }
-
-  if (
-    response.status === 401
-  ) {
-    localStorage.removeItem(
-      "token"
-    );
-
-    localStorage.removeItem(
-      "userEmail"
-    );
-
-    localStorage.removeItem(
-      "userName"
-    );
-
-    window.location.href =
-      "/";
-
-    throw new Error(
-      "Your session has expired. Please log in again."
-    );
-  }
-
-  return response;
 };
 
 export const authJsonFetch =

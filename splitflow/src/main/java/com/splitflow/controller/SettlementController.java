@@ -8,7 +8,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-
 import java.util.List;
 import java.util.Map;
 
@@ -24,13 +23,11 @@ public class SettlementController {
             GroupService groupService) {
 
         this.settlementService = settlementService;
-
         this.groupService = groupService;
     }
 
     // =========================================================
-    // GET BALANCES
-    // GROUP MEMBERS ONLY
+    // BALANCES
     // =========================================================
 
     @GetMapping("/balances")
@@ -40,38 +37,30 @@ public class SettlementController {
 
         String requesterEmail = authentication.getName();
 
-        groupService
-                .verifyGroupMemberAccess(
-                        groupId,
-                        requesterEmail);
+        groupService.verifyGroupMemberAccess(
+                groupId,
+                requesterEmail);
 
         return settlementService
-                .getBalances(
-                        groupId);
+                .getBalances(groupId);
     }
 
     // =========================================================
-    // GET SETTLEMENTS
-    // GROUP MEMBERS ONLY
+    // SETTLEMENTS
     // =========================================================
 
-    @GetMapping({
-            "/settlements",
-            "/expenses/settlements"
-    })
+    @GetMapping("/settlements")
     public List<Settlement> getSettlements(
             @PathVariable Long groupId,
             Authentication authentication) {
 
         String requesterEmail = authentication.getName();
 
-        groupService
-                .verifyGroupMemberAccess(
-                        groupId,
-                        requesterEmail);
+        groupService.verifyGroupMemberAccess(
+                groupId,
+                requesterEmail);
 
         return settlementService
-                .getSettlements(
-                        groupId);
+                .getSettlements(groupId);
     }
 }

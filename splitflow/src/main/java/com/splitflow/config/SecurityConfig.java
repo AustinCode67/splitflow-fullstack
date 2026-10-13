@@ -1,13 +1,13 @@
 package com.splitflow.config;
 
-import java.util.Arrays;
-import java.util.List;
-
 import com.splitflow.security.JwtAuthFilter;
 
 import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import org.springframework.http.HttpMethod;
 
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -18,6 +18,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 public class SecurityConfig {
@@ -32,6 +35,10 @@ public class SecurityConfig {
 
                 this.jwtAuthFilter = jwtAuthFilter;
         }
+
+        // =========================================================
+        // SECURITY
+        // =========================================================
 
         @Bean
         public SecurityFilterChain securityFilterChain(
@@ -48,21 +55,34 @@ public class SecurityConfig {
                                                 SessionCreationPolicy.STATELESS))
 
                                 .exceptionHandling(exception -> exception.authenticationEntryPoint(
-                                                (request,
+                                                (
+                                                                request,
                                                                 response,
-                                                                authException) ->
-
-                                                response.sendError(
-                                                                401,
-                                                                "Unauthorized")))
+                                                                authException) -> response.sendError(
+                                                                                401,
+                                                                                "Unauthorized")))
 
                                 .authorizeHttpRequests(auth -> auth
+
+                                                // Public home endpoint
                                                 .requestMatchers(
-                                                                "/",
-                                                                "/users",
+                                                                HttpMethod.GET,
+                                                                "/")
+                                                .permitAll()
+
+                                                // Registration
+                                                .requestMatchers(
+                                                                HttpMethod.POST,
+                                                                "/users")
+                                                .permitAll()
+
+                                                // Login
+                                                .requestMatchers(
+                                                                HttpMethod.POST,
                                                                 "/login")
                                                 .permitAll()
 
+                                                // Everything else requires JWT
                                                 .anyRequest()
                                                 .authenticated())
 
@@ -73,6 +93,10 @@ public class SecurityConfig {
                 return http.build();
         }
 
+        // =========================================================
+        // CORS
+        // =========================================================
+
         @Bean
         public CorsConfigurationSource corsConfigurationSource() {
 
@@ -80,32 +104,35 @@ public class SecurityConfig {
 
                 List<String> origins = Arrays.stream(
                                 allowedOrigins.split(","))
-                                .map(origin -> origin == null
-                                                ? ""
-                                                : origin.trim())
+                                .map(origin -> origin.trim())
                                 .filter(origin -> !origin.isBlank())
                                 .toList();
 
-                configuration.setAllowedOrigins(
-                                origins);
+                configuration
+                                .setAllowedOrigins(
+                                                origins);
 
-                configuration.setAllowedMethods(
-                                List.of(
-                                                "GET",
-                                                "POST",
-                                                "PUT",
-                                                "DELETE",
-                                                "OPTIONS"));
+                configuration
+                                .setAllowedMethods(
+                                                List.of(
+                                                                "GET",
+                                                                "POST",
+                                                                "PUT",
+                                                                "DELETE",
+                                                                "OPTIONS"));
 
-                configuration.setAllowedHeaders(
-                                List.of("*"));
+                configuration
+                                .setAllowedHeaders(
+                                                List.of("*"));
 
-                configuration.setExposedHeaders(
-                                List.of(
-                                                "Authorization"));
+                configuration
+                                .setExposedHeaders(
+                                                List.of(
+                                                                "Authorization"));
 
-                configuration.setAllowCredentials(
-                                true);
+                configuration
+                                .setAllowCredentials(
+                                                true);
 
                 UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 

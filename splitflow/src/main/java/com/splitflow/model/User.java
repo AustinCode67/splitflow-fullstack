@@ -9,6 +9,7 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
@@ -34,7 +35,12 @@ public class User {
     public User() {
     }
 
-    public User(Long id, String name, String email, String password) {
+    public User(
+            Long id,
+            String name,
+            String email,
+            String password) {
+
         this.id = id;
         this.name = name;
         this.email = email;
