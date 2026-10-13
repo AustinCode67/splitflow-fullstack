@@ -46,7 +46,7 @@ function Dashboard() {
     useState(null);
 
   // =========================================================
-  // DASHBOARD STATS
+  // MONTHLY SPENDING
   // =========================================================
 
   const [
@@ -57,6 +57,25 @@ function Dashboard() {
   const [
     loadingMonthlySpending,
     setLoadingMonthlySpending,
+  ] = useState(false);
+
+  // =========================================================
+  // BALANCE SUMMARY
+  // =========================================================
+
+  const [
+    totalYouOwe,
+    setTotalYouOwe,
+  ] = useState(0);
+
+  const [
+    totalYouAreOwed,
+    setTotalYouAreOwed,
+  ] = useState(0);
+
+  const [
+    loadingBalances,
+    setLoadingBalances,
   ] = useState(false);
 
   // =========================================================
@@ -179,9 +198,7 @@ function Dashboard() {
           (expenses) => {
             expenses.forEach(
               (expense) => {
-                if (
-                  !expense.createdAt
-                ) {
+                if (!expense.createdAt) {
                   return;
                 }
 
@@ -226,6 +243,104 @@ function Dashboard() {
         setLoadingMonthlySpending(
           false
         );
+      }
+    };
+
+  // =========================================================
+  // LOAD BALANCE SUMMARY
+  // =========================================================
+
+  const loadBalanceSummary =
+    async (groupList) => {
+      if (
+        !groupList ||
+        groupList.length === 0
+      ) {
+        setTotalYouOwe(0);
+        setTotalYouAreOwed(0);
+        return;
+      }
+
+      setLoadingBalances(true);
+
+      try {
+        const balanceRequests =
+          groupList.map(
+            async (group) => {
+              try {
+                const response =
+                  await authFetch(
+                    `/groups/${group.id}/balances`
+                  );
+
+                if (!response.ok) {
+                  return 0;
+                }
+
+                const balances =
+                  await response.json();
+
+                const matchingEntry =
+                  Object.entries(
+                    balances
+                  ).find(
+                    ([email]) =>
+                      email.toLowerCase() ===
+                      userEmail?.toLowerCase()
+                  );
+
+                if (!matchingEntry) {
+                  return 0;
+                }
+
+                return Number(
+                  matchingEntry[1] || 0
+                );
+              } catch (error) {
+                console.error(
+                  `Failed to load balances for group ${group.id}:`,
+                  error
+                );
+
+                return 0;
+              }
+            }
+          );
+
+        const userBalances =
+          await Promise.all(
+            balanceRequests
+          );
+
+        let owe = 0;
+        let owed = 0;
+
+        userBalances.forEach(
+          (balance) => {
+            if (balance < 0) {
+              owe += Math.abs(
+                balance
+              );
+            }
+
+            if (balance > 0) {
+              owed += balance;
+            }
+          }
+        );
+
+        setTotalYouOwe(owe);
+        setTotalYouAreOwed(owed);
+      } catch (error) {
+        console.error(
+          "Failed to load balance summary:",
+          error
+        );
+
+        setTotalYouOwe(0);
+        setTotalYouAreOwed(0);
+      } finally {
+        setLoadingBalances(false);
       }
     };
 
@@ -312,9 +427,7 @@ function Dashboard() {
 
         setRecentActivities([]);
       } finally {
-        setLoadingActivities(
-          false
-        );
+        setLoadingActivities(false);
       }
     };
 
@@ -345,6 +458,9 @@ function Dashboard() {
 
         await Promise.all([
           loadMonthlySpending(
+            data
+          ),
+          loadBalanceSummary(
             data
           ),
           loadRecentActivities(
@@ -436,9 +552,7 @@ function Dashboard() {
             event.target
           )
         ) {
-          setShowAccountMenu(
-            false
-          );
+          setShowAccountMenu(false);
         }
       };
 
@@ -464,9 +578,7 @@ function Dashboard() {
       const opening =
         !showAccountMenu;
 
-      setShowAccountMenu(
-        opening
-      );
+      setShowAccountMenu(opening);
 
       if (
         opening &&
@@ -484,9 +596,7 @@ function Dashboard() {
     async (e) => {
       e.preventDefault();
 
-      if (
-        !newGroupName.trim()
-      ) {
+      if (!newGroupName.trim()) {
         showError(
           "Please enter a group name."
         );
@@ -549,10 +659,7 @@ function Dashboard() {
           ?.toLowerCase() ===
         userEmail?.toLowerCase()
       ) {
-        setShowAccountMenu(
-          false
-        );
-
+        setShowAccountMenu(false);
         return;
       }
 
@@ -654,8 +761,7 @@ function Dashboard() {
           ) =>
             total +
             Number(
-              group.budget ||
-                0
+              group.budget || 0
             ),
           0
         ),
@@ -755,10 +861,7 @@ function Dashboard() {
           selectedGroup
         }
         onBack={() => {
-          setSelectedGroup(
-            null
-          );
-
+          setSelectedGroup(null);
           loadGroups();
         }}
       />
@@ -804,13 +907,11 @@ function Dashboard() {
               className="nav-item active"
               type="button"
             >
-
               <span className="nav-icon">
                 ◫
               </span>
 
               Dashboard
-
             </button>
 
           </nav>
@@ -822,19 +923,16 @@ function Dashboard() {
           <div className="sidebar-user">
 
             <div className="user-avatar">
-
               {userName
                 ?.charAt(0)
                 ?.toUpperCase() ||
                 "U"}
-
             </div>
 
             <div className="sidebar-user-info">
 
               <strong>
-                {userName ||
-                  "User"}
+                {userName || "User"}
               </strong>
 
               <span>
@@ -961,8 +1059,6 @@ function Dashboard() {
 
                 </div>
 
-                {/* DEVELOPMENT SWITCHER */}
-
                 {import.meta.env.DEV && (
 
                   <>
@@ -979,8 +1075,7 @@ function Dashboard() {
                         Loading users...
                       </div>
 
-                    ) : devUsers.length ===
-                      0 ? (
+                    ) : devUsers.length === 0 ? (
 
                       <div className="account-switch-loading">
                         No users found.
@@ -991,9 +1086,7 @@ function Dashboard() {
                       <div className="account-list">
 
                         {devUsers.map(
-                          (
-                            account
-                          ) => {
+                          (account) => {
 
                             const isCurrent =
                               account.email
@@ -1045,15 +1138,11 @@ function Dashboard() {
                                 <div className="account-option-info">
 
                                   <strong>
-                                    {
-                                      account.name
-                                    }
+                                    {account.name}
                                   </strong>
 
                                   <span>
-                                    {
-                                      account.email
-                                    }
+                                    {account.email}
                                   </span>
 
                                 </div>
@@ -1134,9 +1223,7 @@ function Dashboard() {
             <button
               type="button"
               onClick={() =>
-                setStatus(
-                  null
-                )
+                setStatus(null)
               }
             >
               ×
@@ -1149,8 +1236,6 @@ function Dashboard() {
         {/* STATS */}
 
         <section className="dashboard-stats">
-
-          {/* TOTAL GROUPS */}
 
           <div className="dashboard-stat-card">
 
@@ -1176,8 +1261,6 @@ function Dashboard() {
 
           </div>
 
-          {/* GROUPS OWNED */}
-
           <div className="dashboard-stat-card">
 
             <div className="stat-icon">
@@ -1201,8 +1284,6 @@ function Dashboard() {
             </div>
 
           </div>
-
-          {/* MONTHLY SPENDING */}
 
           <div className="dashboard-stat-card">
 
@@ -1234,7 +1315,65 @@ function Dashboard() {
 
           </div>
 
-          {/* COMBINED BUDGET */}
+          <div className="dashboard-stat-card">
+
+            <div className="stat-icon">
+              ↓
+            </div>
+
+            <div>
+
+              <span className="stat-label">
+                You Owe
+              </span>
+
+              <strong className="budget-stat">
+
+                {loadingBalances
+                  ? "..."
+                  : `RM ${totalYouOwe.toFixed(
+                      2
+                    )}`}
+
+              </strong>
+
+              <small>
+                Amount you need to pay
+              </small>
+
+            </div>
+
+          </div>
+
+          <div className="dashboard-stat-card">
+
+            <div className="stat-icon">
+              ↑
+            </div>
+
+            <div>
+
+              <span className="stat-label">
+                You Are Owed
+              </span>
+
+              <strong className="budget-stat">
+
+                {loadingBalances
+                  ? "..."
+                  : `RM ${totalYouAreOwed.toFixed(
+                      2
+                    )}`}
+
+              </strong>
+
+              <small>
+                Amount others owe you
+              </small>
+
+            </div>
+
+          </div>
 
           <div className="dashboard-stat-card">
 
@@ -1251,7 +1390,6 @@ function Dashboard() {
               <strong className="budget-stat">
 
                 RM{" "}
-
                 {totalBudget.toFixed(
                   2
                 )}
@@ -1305,8 +1443,7 @@ function Dashboard() {
 
             </div>
 
-          ) : recentActivities.length ===
-            0 ? (
+          ) : recentActivities.length === 0 ? (
 
             <div className="activity-empty">
 
@@ -1334,7 +1471,7 @@ function Dashboard() {
                   <div
                     className="activity-item"
                     key={
-                      activity.id
+                      `${activity.groupId}-${activity.id}`
                     }
                   >
 
@@ -1417,9 +1554,7 @@ function Dashboard() {
               value={
                 newGroupName
               }
-              maxLength={
-                60
-              }
+              maxLength={60}
               onChange={(e) =>
                 setNewGroupName(
                   e.target.value
@@ -1469,15 +1604,13 @@ function Dashboard() {
             </div>
 
             {!loading &&
-              groups.length >
-                0 && (
+              groups.length > 0 && (
 
                 <span className="group-count-badge">
 
                   {groups.length}{" "}
 
-                  {groups.length ===
-                  1
+                  {groups.length === 1
                     ? "group"
                     : "groups"}
 
@@ -1486,8 +1619,6 @@ function Dashboard() {
               )}
 
           </div>
-
-          {/* LOADING */}
 
           {loading && (
 
@@ -1503,11 +1634,8 @@ function Dashboard() {
 
           )}
 
-          {/* EMPTY */}
-
           {!loading &&
-            groups.length ===
-              0 && (
+            groups.length === 0 && (
 
               <div className="empty-groups">
 
@@ -1530,18 +1658,13 @@ function Dashboard() {
 
             )}
 
-          {/* GROUP CARDS */}
-
           {!loading &&
-            groups.length >
-              0 && (
+            groups.length > 0 && (
 
               <div className="group-card-grid">
 
                 {groups.map(
-                  (
-                    group
-                  ) => {
+                  (group) => {
 
                     const isOwner =
                       group
@@ -1552,8 +1675,7 @@ function Dashboard() {
 
                     const budget =
                       Number(
-                        group.budget ||
-                          0
+                        group.budget || 0
                       );
 
                     return (
@@ -1576,9 +1698,7 @@ function Dashboard() {
                           <div className="group-icon">
 
                             {group.name
-                              ?.charAt(
-                                0
-                              )
+                              ?.charAt(0)
                               ?.toUpperCase() ||
                               "G"}
 
@@ -1603,17 +1723,13 @@ function Dashboard() {
                         <div className="group-card-body">
 
                           <h3>
-                            {
-                              group.name
-                            }
+                            {group.name}
                           </h3>
 
                           <p className="group-id">
 
                             Group #
-                            {
-                              group.id
-                            }
+                            {group.id}
 
                           </p>
 
@@ -1628,7 +1744,6 @@ function Dashboard() {
                           <strong>
 
                             RM{" "}
-
                             {budget.toFixed(
                               2
                             )}
