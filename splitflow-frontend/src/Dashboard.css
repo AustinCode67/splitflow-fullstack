@@ -2540,3 +2540,207 @@ p:not(.section-eyebrow) {
   }
 
 }
+
+/* =========================================================
+   TOP SPENDING INSIGHT
+   ========================================================= */
+
+.spending-insight-card {
+  width: 100%;
+
+  min-height: 125px;
+
+  margin-bottom: 18px;
+
+  padding: 22px 24px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 18px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(30, 58, 138, 0.98),
+      rgba(37, 99, 235, 0.96)
+    );
+
+  border:
+    1px solid
+    rgba(59, 130, 246, 0.25);
+
+  border-radius: 18px;
+
+  box-shadow:
+    0 12px 30px
+    rgba(
+      37,
+      99,
+      235,
+      0.14
+    );
+
+  color: white;
+}
+
+.spending-insight-icon {
+  width: 54px;
+  height: 54px;
+
+  min-width: 54px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 15px;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.14
+    );
+
+  font-size: 24px;
+}
+
+.spending-insight-main {
+  flex: 1;
+
+  min-width: 0;
+}
+
+.spending-insight-eyebrow {
+  display: block;
+
+  margin-bottom: 6px;
+
+  color: #bfdbfe;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  letter-spacing: 1px;
+}
+
+.spending-insight-main h3 {
+  margin: 0;
+
+  color: white;
+
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.spending-insight-main p {
+  margin: 5px 0 0;
+
+  color: #dbeafe;
+
+  font-size: 11px;
+}
+
+.spending-insight-stats {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: flex-end;
+
+  text-align: right;
+
+  padding-left: 20px;
+
+  border-left:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.2
+    );
+}
+
+.spending-insight-stats strong {
+  color: white;
+
+  font-size: 22px;
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+.spending-insight-stats span {
+  margin-top: 5px;
+
+  color: #bfdbfe;
+
+  font-size: 10px;
+
+  white-space: nowrap;
+}
+
+.spending-insight-loading {
+  width: 100%;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  color: #dbeafe;
+
+  font-size: 12px;
+}
+
+/* =========================================================
+   RESPONSIVE INSIGHT
+   ========================================================= */
+
+@media (max-width: 650px) {
+
+  .spending-insight-card {
+    align-items: flex-start;
+
+    flex-wrap: wrap;
+
+    padding: 19px;
+  }
+
+  .spending-insight-icon {
+    width: 46px;
+    height: 46px;
+
+    min-width: 46px;
+
+    font-size: 20px;
+  }
+
+  .spending-insight-stats {
+    width: 100%;
+
+    align-items: flex-start;
+
+    text-align: left;
+
+    padding-left: 0;
+    padding-top: 14px;
+
+    border-left: none;
+
+    border-top:
+      1px solid
+      rgba(
+        255,
+        255,
+        255,
+        0.2
+      );
+  }
+
+}

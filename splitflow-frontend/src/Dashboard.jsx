@@ -33,11 +33,15 @@ function Dashboard() {
   const [loading, setLoading] =
     useState(true);
 
-  const [selectedGroup, setSelectedGroup] =
-    useState(null);
+  const [
+    selectedGroup,
+    setSelectedGroup,
+  ] = useState(null);
 
-  const [newGroupName, setNewGroupName] =
-    useState("");
+  const [
+    newGroupName,
+    setNewGroupName,
+  ] = useState("");
 
   const [creating, setCreating] =
     useState(false);
@@ -111,10 +115,8 @@ function Dashboard() {
     setShowAccountMenu,
   ] = useState(false);
 
-  const [
-    devUsers,
-    setDevUsers,
-  ] = useState([]);
+  const [devUsers, setDevUsers] =
+    useState([]);
 
   const [
     loadingDevUsers,
@@ -210,9 +212,9 @@ function Dashboard() {
 
         const now = new Date();
 
-        // -----------------------------------------------------
+        // =====================================================
         // SPENT THIS MONTH
-        // -----------------------------------------------------
+        // =====================================================
 
         let currentMonthTotal = 0;
 
@@ -254,9 +256,9 @@ function Dashboard() {
           currentMonthTotal
         );
 
-        // -----------------------------------------------------
+        // =====================================================
         // LAST 6 MONTHS
-        // -----------------------------------------------------
+        // =====================================================
 
         const months = [];
 
@@ -284,8 +286,7 @@ function Dashboard() {
               date.toLocaleString(
                 "en-MY",
                 {
-                  month:
-                    "short",
+                  month: "short",
                 }
               ),
 
@@ -335,9 +336,9 @@ function Dashboard() {
           months
         );
 
-        // -----------------------------------------------------
+        // =====================================================
         // CATEGORY TOTALS
-        // -----------------------------------------------------
+        // =====================================================
 
         const categoryTotals = {};
 
@@ -380,10 +381,7 @@ function Dashboard() {
                 b.total -
                 a.total
             )
-            .slice(
-              0,
-              6
-            );
+            .slice(0, 6);
 
         setCategoryChart(
           categoryData
@@ -489,6 +487,7 @@ function Dashboard() {
         );
 
         setTotalYouOwe(owe);
+
         setTotalYouAreOwed(
           owed
         );
@@ -934,6 +933,8 @@ function Dashboard() {
           "Dashboard refreshed."
         );
       } catch (error) {
+        console.error(error);
+
         showError(
           "Unable to refresh dashboard."
         );
@@ -979,6 +980,44 @@ function Dashboard() {
         ),
       [groups]
     );
+
+  // =========================================================
+  // ANALYTICS INSIGHT
+  // =========================================================
+
+  const totalCategorySpending =
+    useMemo(
+      () =>
+        categoryChart.reduce(
+          (
+            total,
+            item
+          ) =>
+            total +
+            Number(
+              item.total || 0
+            ),
+          0
+        ),
+      [categoryChart]
+    );
+
+  const topCategory =
+    categoryChart.length > 0
+      ? categoryChart[0]
+      : null;
+
+  const topCategoryPercentage =
+    topCategory &&
+    totalCategorySpending > 0
+      ? (
+          (
+            topCategory.total /
+            totalCategorySpending
+          ) *
+          100
+        ).toFixed(1)
+      : "0.0";
 
   // =========================================================
   // HELPERS
@@ -1108,7 +1147,9 @@ function Dashboard() {
   return (
     <div className="dashboard-layout">
 
-      {/* SIDEBAR */}
+      {/* =====================================================
+          SIDEBAR
+          ===================================================== */}
 
       <aside className="dashboard-sidebar">
 
@@ -1193,7 +1234,9 @@ function Dashboard() {
 
       </aside>
 
-      {/* MAIN */}
+      {/* =====================================================
+          MAIN
+          ===================================================== */}
 
       <main className="dashboard-main">
 
@@ -1309,7 +1352,8 @@ function Dashboard() {
                         Loading users...
                       </div>
 
-                    ) : devUsers.length === 0 ? (
+                    ) : devUsers.length ===
+                      0 ? (
 
                       <div className="account-switch-loading">
                         No users found.
@@ -1429,7 +1473,9 @@ function Dashboard() {
 
         </div>
 
-        {/* QUICK ACTIONS */}
+        {/* =====================================================
+            QUICK ACTIONS
+            ===================================================== */}
 
         <section className="quick-actions-section">
 
@@ -1581,7 +1627,9 @@ function Dashboard() {
 
         </section>
 
-        {/* STATUS */}
+        {/* =====================================================
+            STATUS
+            ===================================================== */}
 
         {status && (
 
@@ -1619,7 +1667,9 @@ function Dashboard() {
 
         )}
 
-        {/* STATS */}
+        {/* =====================================================
+            STATS
+            ===================================================== */}
 
         <section className="dashboard-stats">
 
@@ -1793,7 +1843,9 @@ function Dashboard() {
 
         </section>
 
-        {/* SPENDING OVERVIEW */}
+        {/* =====================================================
+            SPENDING OVERVIEW
+            ===================================================== */}
 
         <section className="spending-overview">
 
@@ -1818,6 +1870,76 @@ function Dashboard() {
             </div>
 
           </div>
+
+          {/* TOP SPENDING INSIGHT */}
+
+          <div className="spending-insight-card">
+
+            {loadingAnalytics ? (
+
+              <div className="spending-insight-loading">
+                Loading spending insight...
+              </div>
+
+            ) : topCategory ? (
+
+              <>
+
+                <div className="spending-insight-icon">
+                  📈
+                </div>
+
+                <div className="spending-insight-main">
+
+                  <span className="spending-insight-eyebrow">
+                    TOP SPENDING CATEGORY
+                  </span>
+
+                  <h3>
+                    {topCategory.category}
+                  </h3>
+
+                  <p>
+                    This is your highest
+                    spending category
+                    across all groups.
+                  </p>
+
+                </div>
+
+                <div className="spending-insight-stats">
+
+                  <strong>
+                    RM{" "}
+                    {Number(
+                      topCategory.total
+                    ).toFixed(2)}
+                  </strong>
+
+                  <span>
+                    {
+                      topCategoryPercentage
+                    }
+                    % of total spending
+                  </span>
+
+                </div>
+
+              </>
+
+            ) : (
+
+              <div className="spending-insight-loading">
+                Add expenses to see
+                your top spending
+                category.
+              </div>
+
+            )}
+
+          </div>
+
+          {/* ANALYTICS CHARTS */}
 
           <div className="analytics-grid">
 
@@ -1853,9 +1975,7 @@ function Dashboard() {
                         month.total,
                       0
                     )
-                    .toFixed(
-                      2
-                    )}
+                    .toFixed(2)}
 
                 </span>
 
@@ -2049,7 +2169,9 @@ function Dashboard() {
 
         </section>
 
-        {/* RECENT ACTIVITY */}
+        {/* =====================================================
+            RECENT ACTIVITY
+            ===================================================== */}
 
         <section className="recent-activity-card">
 
@@ -2100,7 +2222,8 @@ function Dashboard() {
               </strong>
 
               <span>
-                Group activity will appear here.
+                Group activity will
+                appear here.
               </span>
 
             </div>
@@ -2156,7 +2279,9 @@ function Dashboard() {
 
         </section>
 
-        {/* CREATE GROUP */}
+        {/* =====================================================
+            CREATE GROUP
+            ===================================================== */}
 
         <section className="create-group-card">
 
@@ -2221,7 +2346,9 @@ function Dashboard() {
 
         </section>
 
-        {/* GROUPS */}
+        {/* =====================================================
+            GROUPS
+            ===================================================== */}
 
         <section className="groups-section">
 
