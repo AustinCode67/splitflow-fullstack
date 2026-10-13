@@ -1809,3 +1809,124 @@ p:not(.section-eyebrow) {
     animation: none;
   }
 }
+
+/* =========================================================
+   RECENT ACTIVITY
+   ========================================================= */
+
+.recent-activity-card {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 22px;
+  padding: 26px;
+  margin-top: 24px;
+  margin-bottom: 24px;
+  box-shadow:
+    0 12px 35px rgba(15, 23, 42, 0.06);
+}
+
+.recent-activity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.recent-activity-header h2 {
+  margin: 4px 0 4px;
+  font-size: 1.35rem;
+  color: #0f172a;
+}
+
+.recent-activity-header p {
+  margin: 0;
+  color: #64748b;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 4px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #eff6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.activity-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-content strong {
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.activity-content span {
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.activity-time {
+  color: #94a3b8;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.activity-empty {
+  min-height: 130px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #94a3b8;
+  gap: 6px;
+}
+
+.activity-empty strong {
+  color: #475569;
+}
+
+.activity-empty-icon {
+  font-size: 1.6rem;
+  margin-bottom: 5px;
+}
+
+@media (max-width: 700px) {
+  .recent-activity-card {
+    padding: 20px;
+  }
+
+  .activity-item {
+    align-items: flex-start;
+  }
+
+  .activity-time {
+    display: none;
+  }
+}

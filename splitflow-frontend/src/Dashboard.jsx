@@ -45,11 +45,33 @@ function Dashboard() {
   const [status, setStatus] =
     useState(null);
 
-  const [monthlySpending, setMonthlySpending] =
-    useState(0);
+  // =========================================================
+  // DASHBOARD STATS
+  // =========================================================
 
-  const [loadingMonthlySpending, setLoadingMonthlySpending] =
-    useState(false);
+  const [
+    monthlySpending,
+    setMonthlySpending,
+  ] = useState(0);
+
+  const [
+    loadingMonthlySpending,
+    setLoadingMonthlySpending,
+  ] = useState(false);
+
+  // =========================================================
+  // RECENT ACTIVITY
+  // =========================================================
+
+  const [
+    recentActivities,
+    setRecentActivities,
+  ] = useState([]);
+
+  const [
+    loadingActivities,
+    setLoadingActivities,
+  ] = useState(false);
 
   // =========================================================
   // ACCOUNT SWITCHER
@@ -208,6 +230,95 @@ function Dashboard() {
     };
 
   // =========================================================
+  // LOAD RECENT ACTIVITY
+  // =========================================================
+
+  const loadRecentActivities =
+    async (groupList) => {
+      if (
+        !groupList ||
+        groupList.length === 0
+      ) {
+        setRecentActivities([]);
+        return;
+      }
+
+      setLoadingActivities(true);
+
+      try {
+        const activityRequests =
+          groupList.map(
+            async (group) => {
+              try {
+                const response =
+                  await authFetch(
+                    `/groups/${group.id}/activities`
+                  );
+
+                if (!response.ok) {
+                  return [];
+                }
+
+                const activities =
+                  await response.json();
+
+                return activities.map(
+                  (activity) => ({
+                    ...activity,
+                    groupName:
+                      group.name,
+                  })
+                );
+              } catch (error) {
+                console.error(
+                  `Failed to load activities for group ${group.id}:`,
+                  error
+                );
+
+                return [];
+              }
+            }
+          );
+
+        const activityLists =
+          await Promise.all(
+            activityRequests
+          );
+
+        const allActivities =
+          activityLists.flat();
+
+        allActivities.sort(
+          (a, b) =>
+            new Date(
+              b.createdAt
+            ).getTime() -
+            new Date(
+              a.createdAt
+            ).getTime()
+        );
+
+        setRecentActivities(
+          allActivities.slice(
+            0,
+            6
+          )
+        );
+      } catch (error) {
+        console.error(
+          "Failed to load recent activities:",
+          error
+        );
+
+        setRecentActivities([]);
+      } finally {
+        setLoadingActivities(
+          false
+        );
+      }
+    };
+
+  // =========================================================
   // LOAD GROUPS
   // =========================================================
 
@@ -232,9 +343,14 @@ function Dashboard() {
 
         setGroups(data);
 
-        await loadMonthlySpending(
-          data
-        );
+        await Promise.all([
+          loadMonthlySpending(
+            data
+          ),
+          loadRecentActivities(
+            data
+          ),
+        ]);
       } catch (error) {
         console.error(error);
 
@@ -547,6 +663,88 @@ function Dashboard() {
     );
 
   // =========================================================
+  // ACTIVITY HELPERS
+  // =========================================================
+
+  const formatActivityTime =
+    (createdAt) => {
+      if (!createdAt) {
+        return "";
+      }
+
+      const date =
+        new Date(createdAt);
+
+      if (
+        Number.isNaN(
+          date.getTime()
+        )
+      ) {
+        return "";
+      }
+
+      return date.toLocaleString(
+        "en-MY",
+        {
+          day: "numeric",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+        }
+      );
+    };
+
+  const getActivityIcon =
+    (actionType) => {
+      const type =
+        actionType
+          ?.toUpperCase() ||
+        "";
+
+      if (
+        type.includes(
+          "EXPENSE"
+        )
+      ) {
+        return "💳";
+      }
+
+      if (
+        type.includes(
+          "PAYMENT"
+        )
+      ) {
+        return "✓";
+      }
+
+      if (
+        type.includes(
+          "MEMBER"
+        )
+      ) {
+        return "👤";
+      }
+
+      if (
+        type.includes(
+          "BUDGET"
+        )
+      ) {
+        return "RM";
+      }
+
+      if (
+        type.includes(
+          "GROUP"
+        )
+      ) {
+        return "👥";
+      }
+
+      return "•";
+    };
+
+  // =========================================================
   // GROUP PAGE
   // =========================================================
 
@@ -606,11 +804,13 @@ function Dashboard() {
               className="nav-item active"
               type="button"
             >
+
               <span className="nav-icon">
                 ◫
               </span>
 
               Dashboard
+
             </button>
 
           </nav>
@@ -622,10 +822,12 @@ function Dashboard() {
           <div className="sidebar-user">
 
             <div className="user-avatar">
+
               {userName
                 ?.charAt(0)
                 ?.toUpperCase() ||
                 "U"}
+
             </div>
 
             <div className="sidebar-user-info">
@@ -704,10 +906,12 @@ function Dashboard() {
             >
 
               <div className="header-avatar">
+
                 {userName
                   ?.charAt(0)
                   ?.toUpperCase() ||
                   "U"}
+
               </div>
 
               <div className="profile-details">
@@ -802,6 +1006,7 @@ function Dashboard() {
                               account.email;
 
                             return (
+
                               <button
                                 key={
                                   account.id ||
@@ -827,12 +1032,14 @@ function Dashboard() {
                               >
 
                                 <div className="account-option-avatar">
+
                                   {account.name
                                     ?.charAt(
                                       0
                                     )
                                     ?.toUpperCase() ||
                                     "U"}
+
                                 </div>
 
                                 <div className="account-option-info">
@@ -862,6 +1069,7 @@ function Dashboard() {
                                 </div>
 
                               </button>
+
                             );
                           }
                         )}
@@ -909,10 +1117,12 @@ function Dashboard() {
             <div className="dashboard-status-content">
 
               <span className="dashboard-status-icon">
+
                 {status.type ===
                 "success"
                   ? "✓"
                   : "!"}
+
               </span>
 
               <span>
@@ -940,6 +1150,8 @@ function Dashboard() {
 
         <section className="dashboard-stats">
 
+          {/* TOTAL GROUPS */}
+
           <div className="dashboard-stat-card">
 
             <div className="stat-icon">
@@ -963,6 +1175,8 @@ function Dashboard() {
             </div>
 
           </div>
+
+          {/* GROUPS OWNED */}
 
           <div className="dashboard-stat-card">
 
@@ -988,6 +1202,8 @@ function Dashboard() {
 
           </div>
 
+          {/* MONTHLY SPENDING */}
+
           <div className="dashboard-stat-card">
 
             <div className="stat-icon">
@@ -1001,11 +1217,13 @@ function Dashboard() {
               </span>
 
               <strong className="budget-stat">
+
                 {loadingMonthlySpending
                   ? "..."
                   : `RM ${monthlySpending.toFixed(
                       2
                     )}`}
+
               </strong>
 
               <small>
@@ -1015,6 +1233,8 @@ function Dashboard() {
             </div>
 
           </div>
+
+          {/* COMBINED BUDGET */}
 
           <div className="dashboard-stat-card">
 
@@ -1029,10 +1249,13 @@ function Dashboard() {
               </span>
 
               <strong className="budget-stat">
+
                 RM{" "}
+
                 {totalBudget.toFixed(
                   2
                 )}
+
               </strong>
 
               <small>
@@ -1042,6 +1265,115 @@ function Dashboard() {
             </div>
 
           </div>
+
+        </section>
+
+        {/* RECENT ACTIVITY */}
+
+        <section className="recent-activity-card">
+
+          <div className="recent-activity-header">
+
+            <div>
+
+              <p className="section-eyebrow">
+                ACTIVITY
+              </p>
+
+              <h2>
+                Recent Activity
+              </h2>
+
+              <p>
+                Latest changes across
+                your groups.
+              </p>
+
+            </div>
+
+          </div>
+
+          {loadingActivities ? (
+
+            <div className="activity-empty">
+
+              <div className="dashboard-spinner" />
+
+              <span>
+                Loading recent activity...
+              </span>
+
+            </div>
+
+          ) : recentActivities.length ===
+            0 ? (
+
+            <div className="activity-empty">
+
+              <div className="activity-empty-icon">
+                ◷
+              </div>
+
+              <strong>
+                No activity yet
+              </strong>
+
+              <span>
+                Group activity will appear here.
+              </span>
+
+            </div>
+
+          ) : (
+
+            <div className="activity-list">
+
+              {recentActivities.map(
+                (activity) => (
+
+                  <div
+                    className="activity-item"
+                    key={
+                      activity.id
+                    }
+                  >
+
+                    <div className="activity-icon">
+
+                      {getActivityIcon(
+                        activity.actionType
+                      )}
+
+                    </div>
+
+                    <div className="activity-content">
+
+                      <strong>
+                        {activity.message}
+                      </strong>
+
+                      <span>
+                        {activity.groupName}
+                      </span>
+
+                    </div>
+
+                    <div className="activity-time">
+
+                      {formatActivityTime(
+                        activity.createdAt
+                      )}
+
+                    </div>
+
+                  </div>
+
+                )
+              )}
+
+            </div>
+
+          )}
 
         </section>
 
@@ -1101,9 +1433,11 @@ function Dashboard() {
                 creating
               }
             >
+
               {creating
                 ? "Creating..."
                 : "+ Create Group"}
+
             </button>
 
           </form>
@@ -1223,6 +1557,7 @@ function Dashboard() {
                       );
 
                     return (
+
                       <button
                         type="button"
                         key={
@@ -1256,9 +1591,11 @@ function Dashboard() {
                                 : "group-role member"
                             }
                           >
+
                             {isOwner
                               ? "Owner"
                               : "Member"}
+
                           </span>
 
                         </div>
@@ -1272,10 +1609,12 @@ function Dashboard() {
                           </h3>
 
                           <p className="group-id">
+
                             Group #
                             {
                               group.id
                             }
+
                           </p>
 
                         </div>
@@ -1287,10 +1626,13 @@ function Dashboard() {
                           </span>
 
                           <strong>
+
                             RM{" "}
+
                             {budget.toFixed(
                               2
                             )}
+
                           </strong>
 
                         </div>
@@ -1308,6 +1650,7 @@ function Dashboard() {
                         </div>
 
                       </button>
+
                     );
                   }
                 )}
