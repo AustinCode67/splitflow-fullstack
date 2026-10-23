@@ -17,6 +17,7 @@ export const authFetch = async (
   endpoint,
   options = {}
 ) => {
+
   const token =
     getToken();
 
@@ -30,6 +31,7 @@ export const authFetch = async (
   }
 
   try {
+
     const response =
       await fetch(
         `${API_BASE_URL}${endpoint}`,
@@ -39,8 +41,40 @@ export const authFetch = async (
         }
       );
 
+    // ========================================
+    // INVALID / EXPIRED LOGIN
+    // ========================================
+
+    if (
+      response.status === 401 &&
+      token
+    ) {
+
+      console.warn(
+        "Session expired or token is invalid."
+      );
+
+      localStorage.removeItem(
+        "token"
+      );
+
+      localStorage.removeItem(
+        "userEmail"
+      );
+
+      localStorage.removeItem(
+        "userName"
+      );
+
+      window.location.href = "/";
+
+      return response;
+    }
+
     return response;
-  } catch {
+
+  } catch (error) {
+
     throw new Error(
       "Cannot connect to backend."
     );
@@ -51,8 +85,8 @@ export const authJsonFetch =
   async (
     endpoint,
     options = {}
-  ) => {
-    return authFetch(
+  ) =>
+    authFetch(
       endpoint,
       {
         ...options,
@@ -61,16 +95,18 @@ export const authJsonFetch =
           "Content-Type":
             "application/json",
 
-          ...(options.headers ||
-            {}),
+          ...(options.headers || {}),
         },
       }
     );
-  };
 
 export const getErrorMessage =
-  async (response) => {
+  async (
+    response
+  ) => {
+
     try {
+
       const data =
         await response.json();
 
@@ -79,7 +115,9 @@ export const getErrorMessage =
         data.error ||
         `Request failed (${response.status}).`
       );
+
     } catch {
+
       return `Request failed (${response.status}).`;
     }
   };
