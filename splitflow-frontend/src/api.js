@@ -17,9 +17,8 @@ export const authFetch = async (
   endpoint,
   options = {}
 ) => {
-
   const token =
-    getToken();
+    localStorage.getItem("token");
 
   const headers = {
     ...(options.headers || {}),
@@ -31,50 +30,14 @@ export const authFetch = async (
   }
 
   try {
-
-    const response =
-      await fetch(
-        `${API_BASE_URL}${endpoint}`,
-        {
-          ...options,
-          headers,
-        }
-      );
-
-    // ========================================
-    // INVALID / EXPIRED LOGIN
-    // ========================================
-
-    if (
-      response.status === 401 &&
-      token
-    ) {
-
-      console.warn(
-        "Session expired or token is invalid."
-      );
-
-      localStorage.removeItem(
-        "token"
-      );
-
-      localStorage.removeItem(
-        "userEmail"
-      );
-
-      localStorage.removeItem(
-        "userName"
-      );
-
-      window.location.href = "/";
-
-      return response;
-    }
-
-    return response;
-
-  } catch (error) {
-
+    return await fetch(
+      `${API_BASE_URL}${endpoint}`,
+      {
+        ...options,
+        headers,
+      }
+    );
+  } catch {
     throw new Error(
       "Cannot connect to backend."
     );
