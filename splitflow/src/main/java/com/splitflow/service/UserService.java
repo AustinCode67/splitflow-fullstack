@@ -2,6 +2,7 @@ package com.splitflow.service;
 
 import com.splitflow.model.Group;
 import com.splitflow.model.LoginResponse;
+import com.splitflow.model.SubscriptionPlan;
 import com.splitflow.model.User;
 
 import com.splitflow.repository.GroupMemberRepository;
@@ -18,155 +19,262 @@ import java.util.List;
 @Service
 public class UserService {
 
-    private final UserRepository userRepository;
+        private final UserRepository userRepository;
 
-    private final PasswordEncoder passwordEncoder;
+        private final PasswordEncoder passwordEncoder;
 
-    private final JwtService jwtService;
+        private final JwtService jwtService;
 
-    private final GroupRepository groupRepository;
+        private final GroupRepository groupRepository;
 
-    private final GroupMemberRepository groupMemberRepository;
+        private final GroupMemberRepository groupMemberRepository;
 
-    public UserService(
-            UserRepository userRepository,
-            PasswordEncoder passwordEncoder,
-            JwtService jwtService,
-            GroupRepository groupRepository,
-            GroupMemberRepository groupMemberRepository) {
+        public UserService(
+                        UserRepository userRepository,
+                        PasswordEncoder passwordEncoder,
+                        JwtService jwtService,
+                        GroupRepository groupRepository,
+                        GroupMemberRepository groupMemberRepository) {
 
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
-        this.groupRepository = groupRepository;
-        this.groupMemberRepository = groupMemberRepository;
-    }
+                this.userRepository = userRepository;
 
-    // =========================================================
-    // GET ALL USERS
-    // =========================================================
+                this.passwordEncoder = passwordEncoder;
 
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
-    }
+                this.jwtService = jwtService;
 
-    // =========================================================
-    // CREATE USER
-    // =========================================================
+                this.groupRepository = groupRepository;
 
-    public User createUser(User user) {
-
-        String email = user.getEmail()
-                .trim()
-                .toLowerCase();
-
-        user.setEmail(email);
-
-        if (userRepository.existsByEmail(email)) {
-
-            throw new RuntimeException(
-                    "A user with this email already exists.");
+                this.groupMemberRepository = groupMemberRepository;
         }
 
-        String encodedPassword = passwordEncoder.encode(
-                user.getPassword());
+        // =========================================================
+        // GET ALL USERS
+        // =========================================================
 
-        user.setPassword(
-                encodedPassword);
+        public List<User> getAllUsers() {
 
-        return userRepository.save(user);
-    }
-
-    // =========================================================
-    // LOGIN
-    // =========================================================
-
-    public LoginResponse login(
-            String email,
-            String password) {
-
-        if (email == null ||
-                email.isBlank() ||
-                password == null ||
-                password.isBlank()) {
-
-            throw new RuntimeException(
-                    "Email and password are required.");
+                return userRepository
+                                .findAll();
         }
 
-        String normalizedEmail = email
-                .trim()
-                .toLowerCase();
+        // =========================================================
+        // GET CURRENT USER
+        // =========================================================
 
-        User user = userRepository
-                .findByEmail(
-                        normalizedEmail)
-                .orElseThrow(() -> new RuntimeException(
-                        "Invalid email or password."));
+        public User getUserByEmail(
+                        String email) {
 
-        boolean passwordMatches = passwordEncoder.matches(
-                password,
-                user.getPassword());
+                if (email == null ||
+                                email.isBlank()) {
 
-        if (!passwordMatches) {
+                        throw new RuntimeException(
+                                        "Authentication is required.");
+                }
 
-            throw new RuntimeException(
-                    "Invalid email or password.");
+                String normalizedEmail = email
+                                .trim()
+                                .toLowerCase();
+
+                return userRepository
+                                .findByEmail(
+                                                normalizedEmail)
+                                .orElseThrow(
+                                                () -> new RuntimeException(
+                                                                "User not found."));
         }
 
-        String token = jwtService.generateToken(
-                user.getEmail());
+        // =========================================================
+        // CREATE USER
+        // =========================================================
 
-        return new LoginResponse(
-                token,
-                user.getName(),
-                user.getEmail());
-    }
+        public User createUser(
+                        User user) {
 
-    // =========================================================
-    // DELETE ACCOUNT
-    // =========================================================
+                String email = user.getEmail()
+                                .trim()
+                                .toLowerCase();
 
-    @Transactional
-    public void deleteUserAccount(
-            String email) {
+                user.setEmail(
+                                email);
 
-        if (email == null ||
-                email.isBlank()) {
+                if (userRepository
+                                .existsByEmail(
+                                                email)) {
 
-            throw new RuntimeException(
-                    "Authentication is required.");
+                        throw new RuntimeException(
+                                        "A user with this email already exists.");
+                }
+
+                String encodedPassword = passwordEncoder.encode(
+                                user.getPassword());
+
+                user.setPassword(
+                                encodedPassword);
+
+                user.setPlan(
+                                SubscriptionPlan.FREE);
+
+                return userRepository
+                                .save(
+                                                user);
         }
 
-        String normalizedEmail = email
-                .trim()
-                .toLowerCase();
+        // =========================================================
+        // LOGIN
+        // =========================================================
 
-        User user = userRepository
-                .findByEmail(
-                        normalizedEmail)
-                .orElseThrow(() -> new RuntimeException(
-                        "User not found."));
+        public LoginResponse login(
+                        String email,
+                        String password) {
 
-        // Check whether the user owns any groups.
-        List<Group> ownedGroups = groupRepository
-                .findByCreatedByEmail(
-                        normalizedEmail);
+                if (email == null ||
+                                email.isBlank() ||
+                                password == null ||
+                                password.isBlank()) {
 
-        if (!ownedGroups.isEmpty()) {
+                        throw new RuntimeException(
+                                        "Email and password are required.");
+                }
 
-            throw new RuntimeException(
-                    "You must delete or transfer ownership of your groups before deleting your account.");
+                String normalizedEmail = email
+                                .trim()
+                                .toLowerCase();
+
+                User user = userRepository
+                                .findByEmail(
+                                                normalizedEmail)
+                                .orElseThrow(
+                                                () -> new RuntimeException(
+                                                                "Invalid email or password."));
+
+                boolean passwordMatches = passwordEncoder.matches(
+                                password,
+                                user.getPassword());
+
+                if (!passwordMatches) {
+
+                        throw new RuntimeException(
+                                        "Invalid email or password.");
+                }
+
+                String token = jwtService.generateToken(
+                                user.getEmail());
+
+                return new LoginResponse(
+                                token,
+                                user.getName(),
+                                user.getEmail());
         }
 
-        // Remove the user from every group they belong to.
-        groupMemberRepository
-                .deleteByUserEmail(
-                        normalizedEmail);
+        // =========================================================
+        // ACTIVATE PLUS
+        // =========================================================
 
-        // Historical expenses/payments remain intact.
-        // They use email values for their historical records.
+        @Transactional
+        public void activatePlus(
+                        String email,
+                        String stripeCustomerId,
+                        String stripeSubscriptionId) {
 
-        userRepository.delete(user);
-    }
+                String normalizedEmail = email
+                                .trim()
+                                .toLowerCase();
+
+                User user = userRepository
+                                .findByEmail(
+                                                normalizedEmail)
+                                .orElseThrow(
+                                                () -> new RuntimeException(
+                                                                "User not found for Stripe subscription."));
+
+                user.setPlan(
+                                SubscriptionPlan.PLUS);
+
+                user.setStripeCustomerId(
+                                stripeCustomerId);
+
+                user.setStripeSubscriptionId(
+                                stripeSubscriptionId);
+
+                userRepository.save(
+                                user);
+        }
+
+        // =========================================================
+        // CANCEL PLUS
+        // =========================================================
+
+        @Transactional
+        public void deactivatePlusByCustomerId(
+                        String stripeCustomerId) {
+
+                if (stripeCustomerId == null ||
+                                stripeCustomerId.isBlank()) {
+
+                        return;
+                }
+
+                User user = userRepository
+                                .findByStripeCustomerId(
+                                                stripeCustomerId)
+                                .orElse(null);
+
+                if (user == null) {
+
+                        return;
+                }
+
+                user.setPlan(
+                                SubscriptionPlan.FREE);
+
+                user.setStripeSubscriptionId(
+                                null);
+
+                userRepository.save(
+                                user);
+        }
+
+        // =========================================================
+        // DELETE ACCOUNT
+        // =========================================================
+
+        @Transactional
+        public void deleteUserAccount(
+                        String email) {
+
+                if (email == null ||
+                                email.isBlank()) {
+
+                        throw new RuntimeException(
+                                        "Authentication is required.");
+                }
+
+                String normalizedEmail = email
+                                .trim()
+                                .toLowerCase();
+
+                User user = userRepository
+                                .findByEmail(
+                                                normalizedEmail)
+                                .orElseThrow(
+                                                () -> new RuntimeException(
+                                                                "User not found."));
+
+                List<Group> ownedGroups = groupRepository
+                                .findByCreatedByEmail(
+                                                normalizedEmail);
+
+                if (!ownedGroups.isEmpty()) {
+
+                        throw new RuntimeException(
+                                        "You must delete or transfer ownership of your groups before deleting your account.");
+                }
+
+                groupMemberRepository
+                                .deleteByUserEmail(
+                                                normalizedEmail);
+
+                userRepository.delete(
+                                user);
+        }
 }

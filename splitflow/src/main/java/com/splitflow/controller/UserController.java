@@ -24,76 +24,111 @@ import java.util.Map;
 @RestController
 public class UserController {
 
-    private final UserService userService;
+        private final UserService userService;
 
-    public UserController(
-            UserService userService) {
+        public UserController(
+                        UserService userService) {
 
-        this.userService = userService;
-    }
-
-    // =========================================================
-    // GET USERS
-    // =========================================================
-
-    @GetMapping("/users")
-    public List<User> getUsers() {
-
-        return userService
-                .getAllUsers();
-    }
-
-    // =========================================================
-    // REGISTER
-    // =========================================================
-
-    @PostMapping("/users")
-    public User createUser(
-            @Valid @RequestBody User user) {
-
-        return userService
-                .createUser(user);
-    }
-
-    // =========================================================
-    // LOGIN
-    // =========================================================
-
-    @PostMapping("/login")
-    public LoginResponse login(
-            @RequestBody LoginRequest request) {
-
-        return userService.login(
-                request.getEmail(),
-                request.getPassword());
-    }
-
-    // =========================================================
-    // DELETE CURRENT ACCOUNT
-    // =========================================================
-
-    @DeleteMapping("/users/me")
-    public ResponseEntity<Map<String, String>> deleteCurrentUser(
-            Authentication authentication) {
-
-        if (authentication == null) {
-
-            return ResponseEntity
-                    .status(401)
-                    .body(
-                            Map.of(
-                                    "message",
-                                    "Authentication is required."));
+                this.userService = userService;
         }
 
-        String email = authentication.getName();
+        // =========================================================
+        // GET USERS
+        // =========================================================
 
-        userService
-                .deleteUserAccount(email);
+        @GetMapping("/users")
+        public List<User> getUsers() {
 
-        return ResponseEntity.ok(
-                Map.of(
-                        "message",
-                        "Account deleted successfully."));
-    }
+                return userService
+                                .getAllUsers();
+        }
+
+        // =========================================================
+        // GET CURRENT USER
+        // =========================================================
+
+        @GetMapping("/users/me")
+        public ResponseEntity<?> getCurrentUser(
+                        Authentication authentication) {
+
+                if (authentication == null) {
+
+                        return ResponseEntity
+                                        .status(401)
+                                        .body(
+                                                        Map.of(
+                                                                        "message",
+                                                                        "Authentication is required."));
+                }
+
+                User user = userService.getUserByEmail(
+                                authentication.getName());
+
+                return ResponseEntity.ok(
+                                Map.of(
+                                                "id",
+                                                user.getId(),
+                                                "name",
+                                                user.getName(),
+                                                "email",
+                                                user.getEmail(),
+                                                "plan",
+                                                user.getPlan().name()));
+        }
+
+        // =========================================================
+        // REGISTER
+        // =========================================================
+
+        @PostMapping("/users")
+        public User createUser(
+                        @Valid @RequestBody User user) {
+
+                return userService
+                                .createUser(
+                                                user);
+        }
+
+        // =========================================================
+        // LOGIN
+        // =========================================================
+
+        @PostMapping("/login")
+        public LoginResponse login(
+                        @RequestBody LoginRequest request) {
+
+                return userService.login(
+                                request.getEmail(),
+                                request.getPassword());
+        }
+
+        // =========================================================
+        // DELETE CURRENT ACCOUNT
+        // =========================================================
+
+        @DeleteMapping("/users/me")
+        public ResponseEntity<Map<String, String>> deleteCurrentUser(
+                        Authentication authentication) {
+
+                if (authentication == null) {
+
+                        return ResponseEntity
+                                        .status(401)
+                                        .body(
+                                                        Map.of(
+                                                                        "message",
+                                                                        "Authentication is required."));
+                }
+
+                String email = authentication.getName();
+
+                userService
+                                .deleteUserAccount(
+                                                email);
+
+                return ResponseEntity.ok(
+                                Map.of(
+                                                "message",
+                                                "Account deleted successfully."));
+        }
 }

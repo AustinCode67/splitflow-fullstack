@@ -119,6 +119,11 @@ Content-Type: application/json
 GET http://localhost:8080/groups/1/members
 Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJqb2huQGV4YW1wbGUuY29tIiwiaWF0IjoxNzkxMDE2NzkwLCJleHAiOjE3OTExMDMxOTB9.x3IaQUOjPV4Xc_Cbii_vgT697w-abKX4WEyLj56v8ollQEOxwVXUPdZTHVigJoLt
 
+
+### Get current user
+GET http://localhost:8080/users/me
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhdXN0aW5AZXhhbXBsZS5jb20iLCJpYXQiOjE3OTE5NjExNzgsImV4cCI6MTc5MjA0NzU3OH0.NGW4tQCLIULsPcVYKBRhc3CMnmUMgC4d3dWoL3EBc790uG9kznRT4dovc33dSmpa
+
 ###
 
 @token = eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJqb2huQGV4YW1wbGUuY29tIiwiaWF0IjoxNzkxNjI0NTI5LCJleHAiOjE3OTE3MTA5Mjl9.n5Q_1icRQeVV6yG9z1zblxGDD9fqkrKbGhTXUd96wN0G_aXzBRm0RKIWYMgvjufw
@@ -304,6 +309,9 @@ Content-Type: application/json
   "budget": "2000.00"
 }
 
+
+###
+
 ###
 
 GET http://localhost:8080/groups/1/expenses/category-summary
@@ -326,4 +334,36 @@ Authorization: Bearer {{token}}
 ###
 GET http://localhost:8080/users
 
+### Scan receipt with AI
+POST http://localhost:8080/receipts/scan
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhdXN0aW5AZXhhbXBsZS5jb20iLCJpYXQiOjE3OTI3NDE5NzYsImV4cCI6MTc5MjgyODM3Nn0.UaVAETK6FDN1MvX1y8pTuNdbYOMsUFjF6nOh_ZNL1TvcKC-lMvON3Bh6lScJiOpnqARMoZ7mhJ99u6GrtnY-9w
+Content-Type: multipart/form-data; boundary=SplitFlowBoundary
+
+--SplitFlowBoundary
+Content-Disposition: form-data; name="file"; filename="receipt.jpg"
+Content-Type: image/jpeg
+
+< ./receipt.jpg
+--SplitFlowBoundary--
+
+### Gemini SplitFlow Assistant
+
+POST http://localhost:8080/assistant/chat
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhdXN0aW5AZXhhbXBsZS5jb20iLCJpYXQiOjE3OTI3NDg1NTksImV4cCI6MTc5MjgzNDk1OX0.t1wGXx0jfOQ34vkUr_fT1vwsisveXg8wH1blrltGrUcVE0UyQpBAyCyJUEvajUUN2V46EXy2AHOOBLsDE-zdcQ
+Content-Type: application/json
+
+{
+  "message": "Am I spending too much on food?",
+  "context": "This month total spending: RM 420.00. Food spending: RM 186.40. Last month Food spending: RM 142.80.",
+  "history": [
+    {
+      "role": "user",
+      "text": "What is my biggest category?"
+    },
+    {
+      "role": "assistant",
+      "text": "Food is currently your biggest category."
+    }
+  ]
+}
 

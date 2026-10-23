@@ -31,4 +31,4 @@ public class SettlementController {
             @PathVariable Long groupId) {
         return settlementService.getSettlements(groupId);
     }
-}
+} 

@@ -166,6 +166,40 @@ function GroupPage({
   ] = useState({});
 
   // =========================================================
+  // RECEIPT SCANNER
+  // =========================================================
+
+  const [
+    receiptFile,
+    setReceiptFile,
+  ] = useState(null);
+
+  const [
+    receiptPreview,
+    setReceiptPreview,
+  ] = useState("");
+
+  const [
+    receiptResult,
+    setReceiptResult,
+  ] = useState(null);
+
+  const [
+    receiptItemAssignments,
+    setReceiptItemAssignments,
+  ] = useState({});
+
+  const [
+    scanningReceipt,
+    setScanningReceipt,
+  ] = useState(false);
+
+  const [
+    showReceiptScanner,
+    setShowReceiptScanner,
+  ] = useState(false);
+
+  // =========================================================
   // EDIT EXPENSE
   // =========================================================
 
@@ -781,6 +815,397 @@ function GroupPage({
   };
 
   // =========================================================
+  // RECEIPT SCANNER
+  // =========================================================
+
+  const clearReceiptScanner = () => {
+    if (receiptPreview) {
+      URL.revokeObjectURL(
+        receiptPreview
+      );
+    }
+
+    setReceiptFile(null);
+    setReceiptPreview("");
+    setReceiptResult(null);
+    setReceiptItemAssignments({});
+    setScanningReceipt(false);
+  };
+
+  const handleReceiptFileChange = (
+    event
+  ) => {
+    const file =
+      event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (
+      !file.type.startsWith(
+        "image/"
+      )
+    ) {
+      showError(
+        "Please choose an image file."
+      );
+
+      return;
+    }
+
+    if (receiptPreview) {
+      URL.revokeObjectURL(
+        receiptPreview
+      );
+    }
+
+    setReceiptFile(file);
+
+    setReceiptPreview(
+      URL.createObjectURL(
+        file
+      )
+    );
+
+    setReceiptResult(null);
+    setStatus(null);
+  };
+
+  const handleScanReceipt =
+    async () => {
+      if (!receiptFile) {
+        showError(
+          "Choose a receipt image first."
+        );
+
+        return;
+      }
+
+      setStatus(null);
+      setScanningReceipt(true);
+
+      try {
+        const formData =
+          new FormData();
+
+        formData.append(
+          "file",
+          receiptFile
+        );
+
+        const response =
+          await authFetch(
+            "/receipts/scan",
+            {
+              method: "POST",
+              body: formData,
+            }
+          );
+
+        if (!response.ok) {
+          throw new Error(
+            await getErrorMessage(
+              response
+            )
+          );
+        }
+
+        const data =
+          await response.json();
+
+        const scannedItems =
+          Array.isArray(
+            data.items
+          )
+            ? data.items
+            : [];
+
+        setReceiptResult({
+          merchant:
+            data.merchant || "",
+          date:
+            data.date || "",
+          currency:
+            data.currency || "MYR",
+          subtotal:
+            data.subtotal ?? 0,
+          tax:
+            data.tax ?? 0,
+          serviceCharge:
+            data.serviceCharge ?? 0,
+          total:
+            data.total ?? 0,
+          category:
+            data.category || "Other",
+          items:
+            scannedItems,
+        });
+
+        const defaultAssignments = {};
+
+        scannedItems.forEach(
+          (
+            _item,
+            index
+          ) => {
+            defaultAssignments[index] =
+              "__SHARED__";
+          }
+        );
+
+        setReceiptItemAssignments(
+          defaultAssignments
+        );
+
+        showSuccess(
+          "Receipt scanned. Review the detected details before using them."
+        );
+      } catch (error) {
+        showError(
+          error.message ||
+            "Unable to scan receipt."
+        );
+      } finally {
+        setScanningReceipt(false);
+      }
+    };
+
+  const updateReceiptField = (
+    field,
+    value
+  ) => {
+    setReceiptResult(
+      (current) =>
+        current
+          ? {
+              ...current,
+              [field]: value,
+            }
+          : current
+    );
+  };
+
+  const handleReceiptAssignmentChange = (
+    index,
+    value
+  ) => {
+    setReceiptItemAssignments(
+      (current) => ({
+        ...current,
+        [index]: value,
+      })
+    );
+  };
+
+  const handleUseReceiptData =
+    () => {
+      if (!receiptResult) {
+        return;
+      }
+
+      const firstItem =
+        receiptResult.items?.[0];
+
+      const detectedDescription =
+        firstItem?.name?.trim() ||
+        receiptResult.merchant?.trim() ||
+        "Receipt expense";
+
+      setDescription(
+        detectedDescription
+      );
+
+      const receiptTotal =
+        Number(
+          receiptResult.total || 0
+        );
+
+      setAmount(
+        receiptTotal.toFixed(2)
+      );
+
+      setCategory(
+        receiptResult.category ||
+          "Other"
+      );
+
+      const scannedItems =
+        receiptResult.items || [];
+
+      if (
+        scannedItems.length > 0 &&
+        members.length > 0
+      ) {
+        const memberEmails =
+          members.map(
+            (member) =>
+              member.userEmail
+          );
+
+        const exactValues = {};
+
+        memberEmails.forEach(
+          (email) => {
+            exactValues[email] = 0;
+          }
+        );
+
+        let itemTotal = 0;
+
+        scannedItems.forEach(
+          (
+            item,
+            index
+          ) => {
+            const lineTotal =
+              Number(
+                item.totalPrice ||
+                  item.unitPrice ||
+                  0
+              );
+
+            itemTotal += lineTotal;
+
+            const assignment =
+              receiptItemAssignments[
+                index
+              ] || "__SHARED__";
+
+            if (
+              assignment ===
+              "__SHARED__"
+            ) {
+              const each =
+                memberEmails.length > 0
+                  ? lineTotal /
+                    memberEmails.length
+                  : 0;
+
+              memberEmails.forEach(
+                (email) => {
+                  exactValues[email] +=
+                    each;
+                }
+              );
+            } else if (
+              exactValues[
+                assignment
+              ] !== undefined
+            ) {
+              exactValues[
+                assignment
+              ] +=
+                lineTotal;
+            }
+          }
+        );
+
+        // Any difference between detected item totals
+        // and receipt total (tax, service charge, rounding)
+        // is shared equally by all group members.
+        const remainder =
+          receiptTotal -
+          itemTotal;
+
+        if (
+          Math.abs(remainder) > 0.001 &&
+          memberEmails.length > 0
+        ) {
+          const eachRemainder =
+            remainder /
+            memberEmails.length;
+
+          memberEmails.forEach(
+            (email) => {
+              exactValues[email] +=
+                eachRemainder;
+            }
+          );
+        }
+
+        const roundedValues = {};
+
+        memberEmails.forEach(
+          (email) => {
+            roundedValues[email] =
+              Number(
+                exactValues[email]
+                  .toFixed(2)
+              );
+          }
+        );
+
+        // Correct any rounding difference on the first member.
+        const roundedTotal =
+          Object.values(
+            roundedValues
+          ).reduce(
+            (sum, value) =>
+              sum +
+              Number(value || 0),
+            0
+          );
+
+        const difference =
+          Number(
+            (
+              receiptTotal -
+              roundedTotal
+            ).toFixed(2)
+          );
+
+        if (
+          memberEmails.length > 0 &&
+          difference !== 0
+        ) {
+          roundedValues[
+            memberEmails[0]
+          ] =
+            Number(
+              (
+                roundedValues[
+                  memberEmails[0]
+                ] +
+                difference
+              ).toFixed(2)
+            );
+        }
+
+        setSelectedParticipants(
+          memberEmails
+        );
+
+        setSplitType(
+          "EXACT"
+        );
+
+        setSplitValues(
+          roundedValues
+        );
+      }
+
+      setShowReceiptScanner(
+        false
+      );
+
+      document
+        .getElementById(
+          "expense-entry-form"
+        )
+        ?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+
+      showSuccess(
+        scannedItems.length > 0
+          ? "Receipt items were added and an exact split was prepared. Review the amounts before saving."
+          : "Receipt details added to the expense form. Review the split and participants before saving."
+      );
+    };
+
+  // =========================================================
   // ADD EXPENSE
   // =========================================================
 
@@ -877,6 +1302,7 @@ function GroupPage({
         );
 
         setSplitValues({});
+        clearReceiptScanner();
 
         await refreshEverything();
 
@@ -1547,6 +1973,7 @@ function GroupPage({
     "Entertainment",
     "Accommodation",
     "Utilities",
+    "Groceries",
     "Travel",
     "Other",
   ];
@@ -2167,11 +2594,461 @@ function GroupPage({
         className="section-card group-scroll-target"
       >
 
-        <h2>
-          Add Expense
-        </h2>
+        <div className="expense-title-row">
+
+          <div>
+            <h2>
+              Add Expense
+            </h2>
+
+            <p className="expense-subtitle">
+              Enter an expense manually or scan a receipt to fill the form automatically.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            className="receipt-scan-toggle"
+            onClick={() =>
+              setShowReceiptScanner(
+                (current) =>
+                  !current
+              )
+            }
+          >
+            {showReceiptScanner
+              ? "Close Scanner"
+              : "📷 Scan Receipt"}
+          </button>
+
+        </div>
+
+        {showReceiptScanner && (
+
+          <div className="receipt-scanner-card">
+
+            <div className="receipt-scanner-heading">
+
+              <div>
+                <span className="receipt-ai-badge">
+                  SMART OCR
+                </span>
+
+                <h3>
+                  Receipt Scanner
+                </h3>
+
+                <p>
+                  Upload a clear receipt photo. SplitFlow will detect the merchant, date, total, category and items.
+                </p>
+              </div>
+
+              <span className="receipt-scanner-icon">
+                🧾
+              </span>
+
+            </div>
+
+            <div className="receipt-upload-row">
+
+              <label className="receipt-upload-btn">
+
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  capture="environment"
+                  onChange={
+                    handleReceiptFileChange
+                  }
+                  hidden
+                />
+
+                {receiptFile
+                  ? "Choose Another Receipt"
+                  : "Choose Receipt"}
+
+              </label>
+
+              {receiptFile && (
+                <span className="receipt-file-name">
+                  {receiptFile.name}
+                </span>
+              )}
+
+            </div>
+
+            {receiptPreview && (
+
+              <div className="receipt-preview-wrap">
+
+                <img
+                  src={
+                    receiptPreview
+                  }
+                  alt="Receipt preview"
+                  className="receipt-preview-image"
+                />
+
+              </div>
+
+            )}
+
+            {receiptFile && (
+
+              <div className="receipt-action-row">
+
+                <button
+                  type="button"
+                  className="primary-btn"
+                  disabled={
+                    scanningReceipt
+                  }
+                  onClick={
+                    handleScanReceipt
+                  }
+                >
+                  {scanningReceipt
+                    ? "Scanning Receipt..."
+                    : "Scan Receipt"}
+                </button>
+
+                <button
+                  type="button"
+                  className="secondary-btn"
+                  disabled={
+                    scanningReceipt
+                  }
+                  onClick={
+                    clearReceiptScanner
+                  }
+                >
+                  Clear
+                </button>
+
+              </div>
+
+            )}
+
+            {scanningReceipt && (
+
+              <div className="receipt-scanning-state">
+
+                <div className="loading-spinner" />
+
+                <div>
+                  <strong>
+                    Reading your receipt...
+                  </strong>
+
+                  <span>
+                    Detecting purchase information
+                  </span>
+                </div>
+
+              </div>
+
+            )}
+
+            {receiptResult && (
+
+              <div className="receipt-result-card">
+
+                <div className="receipt-result-header">
+
+                  <div>
+                    <span className="receipt-success-dot">
+                      ✓
+                    </span>
+
+                    <strong>
+                      Receipt detected
+                    </strong>
+                  </div>
+
+                  <small>
+                    Review and correct anything before using it.
+                  </small>
+
+                </div>
+
+                <div className="receipt-fields-grid">
+
+                  <label>
+                    Merchant
+
+                    <input
+                      type="text"
+                      value={
+                        receiptResult.merchant
+                      }
+                      onChange={(e) =>
+                        updateReceiptField(
+                          "merchant",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    Date
+
+                    <input
+                      type="date"
+                      value={
+                        receiptResult.date
+                      }
+                      onChange={(e) =>
+                        updateReceiptField(
+                          "date",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    Total
+
+                    <div className="receipt-money-input">
+                      <span>
+                        RM
+                      </span>
+
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={
+                          receiptResult.total
+                        }
+                        onChange={(e) =>
+                          updateReceiptField(
+                            "total",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+
+                  </label>
+
+                  <label>
+                    Category
+
+                    <select
+                      value={
+                        receiptResult.category
+                      }
+                      onChange={(e) =>
+                        updateReceiptField(
+                          "category",
+                          e.target.value
+                        )
+                      }
+                    >
+
+                      {categories.map(
+                        (
+                          item
+                        ) => (
+
+                          <option
+                            key={
+                              item
+                            }
+                            value={
+                              item
+                            }
+                          >
+                            {item}
+                          </option>
+
+                        )
+                      )}
+
+                    </select>
+                  </label>
+
+                </div>
+
+                <div className="receipt-summary-grid">
+
+                  <div>
+                    <span>
+                      Subtotal
+                    </span>
+
+                    <strong>
+                      RM{" "}
+                      {Number(
+                        receiptResult.subtotal ||
+                          0
+                      ).toFixed(2)}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>
+                      Tax
+                    </span>
+
+                    <strong>
+                      RM{" "}
+                      {Number(
+                        receiptResult.tax ||
+                          0
+                      ).toFixed(2)}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>
+                      Service Charge
+                    </span>
+
+                    <strong>
+                      RM{" "}
+                      {Number(
+                        receiptResult.serviceCharge ||
+                          0
+                      ).toFixed(2)}
+                    </strong>
+                  </div>
+
+                </div>
+
+                <div className="receipt-items-section">
+
+                  <div className="receipt-items-title">
+
+                    <h4>
+                      Detected Items
+                    </h4>
+
+                    <span>
+                      {receiptResult.items.length}
+                    </span>
+
+                  </div>
+
+                  {receiptResult.items.length ===
+                  0 ? (
+
+                    <p className="receipt-empty-items">
+                      No individual items were detected. You can still use the receipt total.
+                    </p>
+
+                  ) : (
+
+                    <div className="receipt-items-list">
+
+                      {receiptResult.items.map(
+                        (
+                          item,
+                          index
+                        ) => (
+
+                          <div
+                            className="receipt-item-row"
+                            key={
+                              `${item.name}-${index}`
+                            }
+                          >
+
+                            <div className="receipt-item-main">
+                              <div>
+                                <strong>
+                                  {item.name}
+                                </strong>
+
+                                <span>
+                                  Qty{" "}
+                                  {Number(
+                                    item.quantity ||
+                                      1
+                                  )}
+                                </span>
+                              </div>
+
+                              <strong>
+                                RM{" "}
+                                {Number(
+                                  item.totalPrice ||
+                                    item.unitPrice ||
+                                    0
+                                ).toFixed(2)}
+                              </strong>
+                            </div>
+
+                            <label className="receipt-assignment-field">
+                              Assign to
+
+                              <select
+                                value={
+                                  receiptItemAssignments[
+                                    index
+                                  ] || "__SHARED__"
+                                }
+                                onChange={(e) =>
+                                  handleReceiptAssignmentChange(
+                                    index,
+                                    e.target.value
+                                  )
+                                }
+                              >
+                                <option value="__SHARED__">
+                                  Shared by everyone
+                                </option>
+
+                                {members.map(
+                                  (member) => (
+                                    <option
+                                      key={
+                                        member.userEmail
+                                      }
+                                      value={
+                                        member.userEmail
+                                      }
+                                    >
+                                      {member.userEmail}
+                                    </option>
+                                  )
+                                )}
+                              </select>
+                            </label>
+
+                          </div>
+
+                        )
+                      )}
+
+                    </div>
+
+                  )}
+
+                </div>
+
+                <button
+                  type="button"
+                  className="primary-btn receipt-use-btn"
+                  onClick={
+                    handleUseReceiptData
+                  }
+                >
+                  Use Receipt Data
+                </button>
+
+              </div>
+
+            )}
+
+          </div>
+
+        )}
 
         <form
+          id="expense-entry-form"
           className="form-column"
           onSubmit={
             handleAddExpense

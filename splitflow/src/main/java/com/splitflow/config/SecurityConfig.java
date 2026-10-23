@@ -64,25 +64,26 @@ public class SecurityConfig {
 
                                 .authorizeHttpRequests(auth -> auth
 
-                                                // Public home endpoint
                                                 .requestMatchers(
                                                                 HttpMethod.GET,
                                                                 "/")
                                                 .permitAll()
 
-                                                // Registration
                                                 .requestMatchers(
                                                                 HttpMethod.POST,
                                                                 "/users")
                                                 .permitAll()
 
-                                                // Login
                                                 .requestMatchers(
                                                                 HttpMethod.POST,
                                                                 "/login")
                                                 .permitAll()
 
-                                                // Everything else requires JWT
+                                                .requestMatchers(
+                                                                HttpMethod.POST,
+                                                                "/payments/webhook")
+                                                .permitAll()
+
                                                 .anyRequest()
                                                 .authenticated())
 
